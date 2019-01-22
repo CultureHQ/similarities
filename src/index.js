@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import Chance from "chance";
 import uuid from "uuid/v4";
@@ -28,16 +28,52 @@ const makeUsers = () => (
   Array(INITIAL_USER_COUNT).fill(0).map(() => new User())
 );
 
-const UserRow = ({ user, onUserChange }) => {
+const UserNameInput = ({ cellRef, user, onUserChange, onBlur }) => {
+  const inputRef = useRef();
+
+  useEffect(() => inputRef.current.focus(), []);
+
   const onChange = useCallback(
+    event => onUserChange(user.mutate({ name: event.target.value })), [user]
+  );
+
+  useEffect(() => {
+    const onClick = event => !cellRef.current.contains(event.target) && onBlur();
+
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  });
+
+  return <input ref={inputRef} type="text" value={user.name} onChange={onChange} />;
+};
+
+const UserNameCell = ({ user, onUserChange }) => {
+  const cellRef = useRef();
+  const [editing, setEditing] = useState(false);
+
+  const onFocus = useCallback(() => setEditing(true), []);
+  const onBlur = useCallback(() => setEditing(false), []);
+
+  return (
+    <td ref={cellRef} onClick={onFocus}>
+      {editing
+        ? <UserNameInput cellRef={cellRef} user={user} onUserChange={onUserChange} onBlur={onBlur} />
+        : user.name
+      }
+    </td>
+  );
+};
+
+const UserRow = ({ user, onUserChange }) => {
+  const onCheck = useCallback(
     event => onUserChange(user.mutate({ checked: event.target.checked })),
     [user, onUserChange]
   );
 
   return (
     <tr className={user.checked ? "checked" : ""}>
-      <td><input type="checkbox" checked={user.checked} onChange={onChange} /></td>
-      <td>{user.name}</td>
+      <td><input type="checkbox" checked={user.checked} onChange={onCheck} /></td>
+      <UserNameCell user={user} onUserChange={onUserChange} />
     </tr>
   );
 };
