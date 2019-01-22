@@ -1,0 +1,22 @@
+{
+  "name": "similarities",
+  "version": "0.1.0",
+  "description": "Example app for our similarity engine",
+  "main": "dist/main.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CultureHQ/similarities.git"
+  },
+  "keywords": [
+    "react"
+  ],
+  "author": "Kevin Deisz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/CultureHQ/similarities/issues"
+  },
+  "homepage": "https://github.com/CultureHQ/similarities#readme"
+}
