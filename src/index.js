@@ -78,7 +78,33 @@ const UserRow = ({ user, onUserChange }) => {
   );
 };
 
-const Users = ({ users, onUserChange }) => (
+const UserAddRow = ({ onUserAdd }) => {
+  const [name, setName] = useState("");
+
+  const onChange = useCallback(event => setName(event.target.value), []);
+
+  const onAddClick = useCallback(() => {
+    onUserAdd(new User({ name }));
+    setName("");
+  }, [name]);
+
+  const onKeyDown = useCallback(
+    event => event.key === "Enter" && onAddClick(), [onAddClick]
+  );
+
+  return (
+    <tr>
+      <td>
+        <button type="button" onClick={onAddClick}>+</button>
+      </td>
+      <td>
+        <input type="text" value={name} onChange={onChange} onKeyDown={onKeyDown} />
+      </td>
+    </tr>
+  );
+};
+
+const Users = ({ users, onUserAdd, onUserChange }) => (
   <table>
     <thead>
       <tr>
@@ -87,6 +113,7 @@ const Users = ({ users, onUserChange }) => (
       </tr>
     </thead>
     <tbody>
+      <UserAddRow onUserAdd={onUserAdd} />
       {users.map(user => (
         <UserRow key={user.uuid} user={user} onUserChange={onUserChange} />
       ))}
@@ -96,6 +123,8 @@ const Users = ({ users, onUserChange }) => (
 
 const App = () => {
   const [users, setUsers] = useState(makeUsers());
+
+  const onUserAdd = useCallback(user => setUsers(value => [user, ...value]), []);
 
   const onUserChange = useCallback(
     user => setUsers(value => value.map(prev => prev.uuid === user.uuid ? user : prev)), []
@@ -112,7 +141,7 @@ const App = () => {
         {users.some(user => user.checked) && (
           <button type="button" onClick={onUsersRemove}>Remove</button>
         )}
-        <Users users={users} onUserChange={onUserChange} />
+        <Users users={users} onUserAdd={onUserAdd} onUserChange={onUserChange} />
       </main>
       {ReactDOM.createPortal(
         <footer>
