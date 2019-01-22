@@ -2,8 +2,11 @@
   "name": "similarities",
   "version": "0.1.0",
   "description": "Example app for our similarity engine",
-  "main": "dist/main.js",
+  "main": "docs/main.js",
   "scripts": {
+    "build": "webpack --mode production",
+    "lint": "eslint .",
+    "start": "webpack-dev-server --mode development --hot",
     "test": "jest"
   },
   "repository": {
