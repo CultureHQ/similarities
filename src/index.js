@@ -31,6 +31,8 @@ const deleteUser = user => ({ type: "DELETE_USER", user });
 
 const deleteUsers = () => ({ type: "DELETE_USERS" });
 
+const toggleAll = checked => ({ type: "TOGGLE_ALL", checked });
+
 const updateUser = user => ({ type: "UPDATE_USER", user });
 
 const reducer = (state, action) => {
@@ -45,6 +47,8 @@ const reducer = (state, action) => {
       return { ...state, users: state.users.filter(user => user.key !== action.user.key) };
     case "DELETE_USERS":
       return { ...state, users: state.users.filter(user => !user.checked) };
+    case "TOGGLE_ALL":
+      return { ...state, users: state.users.map(user => ({ ...user, checked: action.checked })) };
     case "UPDATE_USER":
       return { ...state, users: state.users.map(user => user.key === action.user.key ? action.user : user) };
     default:
@@ -162,27 +166,38 @@ const AddRow = ({ dispatch, locations }) => {
   );
 };
 
-const Table = ({ dispatch, locations, users }) => (
-  <table>
-    <thead>
-      <tr>
-        <th />
-        <th>Name</th>
-        {locations.map(location => (
-          <th key={location.key}>
-            {location.name}
+const Table = ({ dispatch, locations, users }) => {
+  const [allChecked, setAllChecked] = useState(false);
+
+  const onAllCheck = useCallback(event => {
+    setAllChecked(event.target.checked);
+    dispatch(toggleAll(event.target.checked));
+  }, []);
+
+  return (
+    <table>
+      <thead>
+        <tr>
+          <th>
+            <input type="checkbox" checked={allChecked} onChange={onAllCheck} />
           </th>
+          <th>Name</th>
+          {locations.map(location => (
+            <th key={location.key}>
+              {location.name}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        <AddRow dispatch={dispatch} locations={locations} />
+        {users.map(user => (
+          <Row key={user.key} dispatch={dispatch} locations={locations} user={user} />
         ))}
-      </tr>
-    </thead>
-    <tbody>
-      <AddRow dispatch={dispatch} locations={locations} />
-      {users.map(user => (
-        <Row key={user.key} dispatch={dispatch} locations={locations} user={user} />
-      ))}
-    </tbody>
-  </table>
-);
+      </tbody>
+    </table>
+  );
+};
 
 const AppFooter = () => ReactDOM.createPortal(
   <footer>
