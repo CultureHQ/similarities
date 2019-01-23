@@ -17,6 +17,8 @@ const makeInitialState = () => {
     checked: false
   }));
 
+  users.sort((left, right) => left.name.localeCompare(right.name));
+
   return {
     leftUser: null,
     locations,
@@ -37,9 +39,19 @@ const selectLeftUser = user => ({ type: "SELECT_LEFT_USER", user });
 
 const selectRightUser = user => ({ type: "SELECT_RIGHT_USER", user });
 
+const sortUsers = ({ field, direction, value }) => ({ type: "SORT_USERS", field, direction, value });
+
 const toggleAll = checked => ({ type: "TOGGLE_ALL", checked });
 
 const updateUser = user => ({ type: "UPDATE_USER", user });
+
+const makeSorter = ({ field, direction, value }) => {
+  const toString = user => user[field].toLocaleString();
+  const toCompare = value ? (user => (toString(user) === value).toString()) : toString;
+
+  const factor = direction === "ASC" ? 1 : -1;
+  return (left, right) => toCompare(left).localeCompare(toCompare(right)) * factor;
+};
 
 const reducer = (state, action) => {
   switch (action.type) {
@@ -57,6 +69,8 @@ const reducer = (state, action) => {
       return { ...state, leftUser: action.user };
     case "SELECT_RIGHT_USER":
       return { ...state, rightUser: action.user };
+    case "SORT_USERS":
+      return { ...state, users: state.users.sort(makeSorter(action)) };
     case "TOGGLE_ALL":
       return { ...state, users: state.users.map(user => ({ ...user, checked: action.checked })) };
     case "UPDATE_USER":
@@ -182,7 +196,12 @@ const Table = ({ dispatch, locations, users }) => {
   const onAllCheck = useCallback(event => {
     setAllChecked(event.target.checked);
     dispatch(toggleAll(event.target.checked));
-  }, []);
+  }, [dispatch]);
+
+  const onSort = useCallback(event => {
+    const { field, direction, value } = event.target.dataset;
+    dispatch(sortUsers({ field, direction, value }));
+  }, [dispatch])
 
   return (
     <table>
@@ -191,10 +210,16 @@ const Table = ({ dispatch, locations, users }) => {
           <th>
             <input type="checkbox" checked={allChecked} onChange={onAllCheck} />
           </th>
-          <th>Name</th>
+          <th>
+            Name
+            <button type="button" onClick={onSort} data-field="name" data-direction="ASC">↑</button>
+            <button type="button" onClick={onSort} data-field="name" data-direction="DESC">↓</button>
+          </th>
           {locations.map(location => (
             <th key={location.key}>
               {location.name}
+              <button type="button" onClick={onSort} data-field="locationKey" data-direction="ASC" data-value={location.key}>↑</button>
+              <button type="button" onClick={onSort} data-field="locationKey" data-direction="DESC" data-value={location.key}>↓</button>
             </th>
           ))}
         </tr>
