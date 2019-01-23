@@ -205,8 +205,51 @@ const UserSearch = ({ dispatch, user, users }) => {
   );
 };
 
+const makeCompare = (locations, users) => (left, right) => {
+  const locationScore = (left.locationKey === right.locationKey ? 1 : 0) * locations.length;
+  const score = locationScore;
+
+  return 0.8 / (score + 1) + 0.2;
+};
+
+const getCoords = percent => [
+  Math.cos(2 * Math.PI * percent),
+  Math.sin(2 * Math.PI * percent)
+];
+
 const UserChart = ({ locations, user, users }) => {
-  return <div />;
+  const compare = useMemo(() => makeCompare(locations, users), [locations, users]);
+
+  const interval = 1 / (users.length - 1);
+  let cursor = -0.25;
+
+  const slices = users.filter(({ key }) => key !== user.key).map(other => {
+    const scale = compare(user, other);
+    const [x, y] = getCoords(cursor + (interval / 2));
+    cursor += interval;
+
+    return {
+      key: other.key,
+      initials: other.name.replace(/[^A-Z]/g, ""),
+      line: { x1: 0, y1: 0, x2: x * (0.9 - 0.075) * scale, y2: y * (0.9 - 0.075) * scale, stroke: "#666", strokeWidth: 0.01 },
+      circle: { cx: x * 0.9 * scale, cy: y * 0.9 * scale, r: 0.075, fill: "transparent", stroke: "#666", strokeWidth: 0.01 },
+      text: { x: x * 0.9 * scale, y: y * 0.9 * scale, fontSize: "0.075px", textAnchor: "middle", dy: 0.03 }
+    };
+  });
+
+  return (
+    <svg viewBox="-1 -1 2 2">
+      {slices.map(slice => (
+        <g key={slice.key}>
+          <line {...slice.line} />
+          <circle {...slice.circle} />
+          <text {...slice.text}>
+            {slice.initials}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
 };
 
 const AppFooter = () => ReactDOM.createPortal(
@@ -230,9 +273,14 @@ const App = () => {
     <>
       <nav>CultureHQ similarity engine</nav>
       <main>
-        <section>
+        <section style={{ textAlign: "center" }}>
           <UserSearch dispatch={dispatch} user={currentUser} users={users} />
-          <UserChart locations={locations} user={currentUser} users={users} />
+          {currentUser && users.length > 1 && (
+            <>
+              <h1>{currentUser.name}</h1>
+              <UserChart locations={locations} user={currentUser} users={users} />
+            </>
+          )}
         </section>
         <section>
           <Table dispatch={dispatch} locations={locations} users={users} />
