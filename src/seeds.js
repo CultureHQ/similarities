@@ -6,7 +6,7 @@ export const seedLocations = [
   "Washington, D.C."
 ];
 
-export const seedNames = [
+export const seedUsers = [
   "Brian Franklin",
   "Cole Shaw",
   "Corey Harper",

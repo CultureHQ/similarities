@@ -1,27 +1,21 @@
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 
-import { seedLocations, seedNames } from "./seeds";
+import { seedLocations, seedUsers } from "./seeds";
 
 const makeInitialState = () => {
-  const locations = Array(5).fill(0).map((_, index) => ({
-    key: index,
-    name: seedLocations[index]
-  }));
+  const locations = seedLocations.map((name, key) => ({ key, name }));
 
-  const users = Array(30).fill(0).map((_, index) => ({
-    key: index,
+  const users = seedUsers.map((name, key) => ({
+    key,
     locationKey: locations[Math.floor(Math.random() * locations.length)].key,
-    name: seedNames[index],
+    name,
     checked: false
   }));
-
-  users.sort((left, right) => left.name.localeCompare(right.name));
 
   return {
     leftUser: null,
     locations,
-    nextLocationKey: locations.length,
     nextUserKey: users.length,
     rightUser: null,
     users
