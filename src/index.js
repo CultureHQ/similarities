@@ -298,7 +298,7 @@ const App = () => {
   const [state, dispatch] = useReducer(reducer, makeInitialState());
   const { currentUser, locations, users } = state;
 
-  const onUsersDelete = useCallback(() => dispatch(deleteUsers()), []);
+  const onUsersDelete = useCallback(() => dispatch(deleteUsers()), [dispatch]);
 
   return (
     <>
