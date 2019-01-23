@@ -31,6 +31,8 @@ const makeInitialState = () => {
 
 const createUser = user => ({ type: "CREATE_USER", user });
 
+const deleteLocation = location => ({ type: "DELETE_LOCATION", location });
+
 const deleteUser = user => ({ type: "DELETE_USER", user });
 
 const deleteUsers = () => ({ type: "DELETE_USERS" });
@@ -60,6 +62,23 @@ const reducer = (state, action) => {
         ...state,
         nextUserKey: state.nextUserKey + 1,
         users: [{ key: state.nextUserKey, checked: false, ...action.user }, ...state.users]
+      };
+    case "DELETE_LOCATION":
+      const nextLocations = state.locations.filter(location => location.key !== action.location.key);
+
+      return {
+        ...state,
+        locations: nextLocations,
+        users: state.users.map(user => {
+          if (user.locationKey !== location.key) {
+            return user;
+          }
+
+          return {
+            ...user,
+            locationKey: nextLocations[Math.floor(Math.random() * nextLocations.length)].key
+          };
+        })
       };
     case "DELETE_USER":
       return { ...state, users: state.users.filter(user => user.key !== action.user.key) };
@@ -203,6 +222,10 @@ const Table = ({ dispatch, locations, users }) => {
     dispatch(sortUsers({ field, direction, value }));
   }, [dispatch])
 
+  const onDeleteLocation = useCallback(
+    location => dispatch(deleteLocation(location)), [dispatch]
+  );
+
   return (
     <table>
       <thead>
@@ -220,6 +243,7 @@ const Table = ({ dispatch, locations, users }) => {
               {location.name}
               <button type="button" onClick={onSort} data-field="locationKey" data-direction="ASC" data-value={location.key}>↑</button>
               <button type="button" onClick={onSort} data-field="locationKey" data-direction="DESC" data-value={location.key}>↓</button>
+              <button type="button" onClick={() => onDeleteLocation(location)}>x</button>
             </th>
           ))}
         </tr>
