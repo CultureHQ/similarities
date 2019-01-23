@@ -15,6 +15,8 @@ const makeInitialState = () => ({
 
 const createUser = user => ({ type: "CREATE_USER", user });
 
+const deleteUser = user => ({ type: "DELETE_USER", user });
+
 const deleteUsers = () => ({ type: "DELETE_USERS" });
 
 const updateUser = user => ({ type: "UPDATE_USER", user });
@@ -24,7 +26,13 @@ const reducer = (state, action) => {
 
   switch (action.type) {
     case "CREATE_USER":
-      return { ...state, nextKey: state.nextKey + 1, users: [{ key: state.nextKey, checked: false, ...action.user }, ...users] };
+      return {
+        ...state,
+        nextKey: state.nextKey + 1,
+        users: [{ key: state.nextKey, checked: false, ...action.user }, ...users]
+      };
+    case "DELETE_USER":
+      return { ...state, users: users.filter(user => user.key !== action.user.key) };
     case "DELETE_USERS":
       return { ...state, users: users.filter(user => !user.checked) };
     case "UPDATE_USER":
@@ -76,10 +84,13 @@ const UserRow = ({ dispatch, user }) => {
     [dispatch, user]
   );
 
+  const onDelete = useCallback(() => dispatch(deleteUser(user)), [dispatch, user]);
+
   return (
     <tr className={user.checked ? "checked" : ""}>
       <td><input type="checkbox" checked={user.checked} onChange={onCheck} /></td>
       <UserNameCell dispatch={dispatch} user={user} />
+      <td><button type="button" onClick={onDelete}>x</button></td>
     </tr>
   );
 };
@@ -105,6 +116,7 @@ const UserAddRow = ({ dispatch }) => {
       <td>
         <input type="text" value={name} onChange={onChange} onKeyDown={onKeyDown} />
       </td>
+      <td />
     </tr>
   );
 };

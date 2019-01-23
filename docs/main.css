@@ -60,7 +60,8 @@ td {
   vertical-align: top;
 }
 
-td:first-child {
+td:first-child,
+td:last-child {
   width: 40px;
 }
 
