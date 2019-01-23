@@ -57,7 +57,11 @@ const reducer = (state, action) => {
     case "TOGGLE_ALL":
       return { ...state, users: state.users.map(user => ({ ...user, checked: action.checked })) };
     case "UPDATE_USER":
-      return { ...state, users: state.users.map(user => user.key === action.user.key ? action.user : user) };
+      return {
+        ...state,
+        currentUser: state.currentUser && state.currentUser.key === action.user.key ? action.user : state.currentUser,
+        users: state.users.map(user => user.key === action.user.key ? action.user : user)
+      };
     default:
       return state;
   }
@@ -356,16 +360,18 @@ const UserSearch = ({ dispatch, user, users }) => {
   );
 };
 
-const makeCompare = (departments, interests, locations, users) => {
+const I = 0.2;
+
+const makeCompare = (departments, interests, locations, user, users) => {
   const interestsLength = Object.keys(interests).reduce((accum, key) => accum + interests[key].length, 0);
-  const maximum = Math.pow(departments.length, 2) + Math.pow(interestsLength, 2) + locations.length;
+  const maximum = Math.pow(departments.length, 2) + I * interestsLength + locations.length;
 
-  return (left, right) => {
-    const departmentScore = left.departmentKeys.filter(departmentKey => right.departmentKeys.includes(departmentKey)).length * departments.length;
-    const interestScore = left.interestKeys.filter(interestKey => right.interestKeys.includes(interestKey)).length;
-    const locationScore = (left.locationKey === right.locationKey ? 1 : 0) * locations.length;
+  return other => {
+    const departmentScore = user.departmentKeys.filter(departmentKey => other.departmentKeys.includes(departmentKey)).length * departments.length;
+    const interestScore = user.interestKeys.filter(interestKey => other.interestKeys.includes(interestKey)).length;
+    const locationScore = (user.locationKey === other.locationKey ? 1 : 0) * locations.length;
 
-    return (maximum - departmentScore + interestScore + locationScore) / maximum;
+    return (maximum - departmentScore - I * interestScore - locationScore) / maximum;
   };
 };
 
@@ -375,16 +381,12 @@ const getCoords = percent => [
 ];
 
 const UserChart = ({ departments, interests, locations, user, users }) => {
-  const compare = useMemo(
-    () => makeCompare(departments, interests, locations, users),
-    [departments, interests, locations, users]
-  );
-
   const interval = 1 / (users.length - 1);
   let cursor = -0.25;
 
+  const compare = makeCompare(departments, interests, locations, user, users);
   const slices = users.filter(({ key }) => key !== user.key).map(other => {
-    const scale = compare(user, other);
+    const scale = compare(other);
     const [x, y] = getCoords(cursor + (interval / 2));
     cursor += interval;
 
@@ -433,7 +435,7 @@ const App = () => {
     <>
       <nav>CultureHQ similarity engine</nav>
       <main>
-        <section style={{ textAlign: "center" }}>
+        <header>
           <UserSearch dispatch={dispatch} user={currentUser} users={users} />
           {currentUser && users.length > 1 && (
             <>
@@ -447,7 +449,7 @@ const App = () => {
               />
             </>
           )}
-        </section>
+        </header>
         <section>
           <Table
             departments={departments}
