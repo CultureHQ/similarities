@@ -117,6 +117,66 @@ const EditUserDepartment = ({ department, dispatch, user }) => {
   );
 };
 
+const EditUserInterest = ({ dispatch, interest, user }) => {
+  const name = `ui-${user.key}-${interest.key}`;
+
+  const onInterestCheck = useCallback(
+    event => dispatch(updateUser({
+      ...user,
+      interestKeys: (
+        event.target.checked
+        ? [...user.interestKeys, interest.key]
+        : user.interestKeys.filter(interestKey => interestKey !== interest.key)
+      )
+    })),
+    [dispatch, interest, user]
+  );
+
+  return (
+    <label htmlFor={name}>
+      <input
+        type="checkbox"
+        id={name}
+        name={name}
+        checked={user.interestKeys.includes(interest.key)}
+        onChange={onInterestCheck}
+      />
+      {" "}
+      {interest.name}
+    </label>
+  );
+};
+
+const EditUserInterestCategory = ({ currentInterestKey, dispatch, interestKey, interests, setCurrentInterestKey, user }) => {
+  const name = `uic-${user.key}-${interestKey}`;
+  const checked = currentInterestKey === interestKey;
+
+  return (
+    <li>
+      <label htmlFor={name}>
+        <input
+          type="checkbox"
+          id={name}
+          name={name}
+          checked={checked}
+          onChange={event => setCurrentInterestKey(event.target.checked ? interestKey : null)}
+        />
+        {" "}
+        {interestKey}
+      </label>
+      {checked && (
+        <ul>
+          {interests[interestKey].map(interest => (
+            <li key={interest.key}>
+              <EditUserInterest dispatch={dispatch} interest={interest} user={user} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+};
+
 const EditRow = ({ departments, dispatch, interests, locations, user }) => {
   const onNameChange = useCallback(
     event => dispatch(updateUser({ ...user, name: event.target.value })),
@@ -132,6 +192,8 @@ const EditRow = ({ departments, dispatch, interests, locations, user }) => {
     () => dispatch(deleteUser(user)),
     [dispatch, user]
   );
+
+  const [currentInterestKey, setCurrentInterestKey] = useState(null);
 
   return (
     <tr className="checked">
@@ -161,7 +223,17 @@ const EditRow = ({ departments, dispatch, interests, locations, user }) => {
       </td>
       <td>
         <ul>
-          
+          {Object.keys(interests).map(key => (
+            <EditUserInterestCategory
+              key={key}
+              currentInterestKey={currentInterestKey}
+              dispatch={dispatch}
+              interestKey={key}
+              interests={interests}
+              setCurrentInterestKey={setCurrentInterestKey}
+              user={user}
+            />
+          ))}
         </ul>
       </td>
       <td>
@@ -290,7 +362,7 @@ const makeCompare = (departments, interests, locations, users) => {
 
   return (left, right) => {
     const departmentScore = left.departmentKeys.filter(departmentKey => right.departmentKeys.includes(departmentKey)).length * departments.length;
-    const interestScore = left.interestKeys.filter(interestKey => right.interestKeys.includes(interestKey)).length * interestsLength;
+    const interestScore = left.interestKeys.filter(interestKey => right.interestKeys.includes(interestKey)).length;
     const locationScore = (left.locationKey === right.locationKey ? 1 : 0) * locations.length;
 
     return (maximum - departmentScore + interestScore + locationScore) / maximum;
