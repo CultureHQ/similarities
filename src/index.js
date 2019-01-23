@@ -1,40 +1,46 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef, useReducer } from "react";
 import ReactDOM from "react-dom";
 import Chance from "chance";
-import uuid from "uuid/v4";
-
-const INITIAL_USER_COUNT = 30;
 
 const chance = new Chance();
 
-class User {
-  constructor(opts = {}) {
-    this.uuid = opts.uuid || uuid();
-    this.name = opts.name || chance.name();
-    this.checked = opts.checked || false;
+const makeInitialState = () => ({
+  nextKey: 30,
+  users: Array(30).fill(0).map((_, index) => ({
+    key: index,
+    name: chance.name(),
+    checked: false
+  }))
+});
+
+const createUser = user => ({ type: "CREATE_USER", user });
+
+const deleteUsers = () => ({ type: "DELETE_USERS" });
+
+const updateUser = user => ({ type: "UPDATE_USER", user });
+
+const reducer = (state, action) => {
+  const { users } = state;
+
+  switch (action.type) {
+    case "CREATE_USER":
+      return { ...state, nextKey: state.nextKey + 1, users: [{ key: state.nextKey, checked: false, ...action.user }, ...users] };
+    case "DELETE_USERS":
+      return { ...state, users: users.filter(user => !user.checked) };
+    case "UPDATE_USER":
+      return { ...state, users: users.map(user => user.key === action.user.key ? action.user : user) };
+    default:
+      return state;
   }
+};
 
-  mutate(change) {
-    return new User({
-      uuid: this.uuid,
-      name: this.name,
-      checked: this.checked,
-      ...change
-    });
-  }
-}
-
-const makeUsers = () => (
-  Array(INITIAL_USER_COUNT).fill(0).map(() => new User())
-);
-
-const UserNameInput = ({ cellRef, user, onUserChange, onBlur }) => {
+const UserNameInput = ({ cellRef, dispatch, onBlur, user }) => {
   const inputRef = useRef();
 
   useEffect(() => inputRef.current.focus(), []);
 
   const onChange = useCallback(
-    event => onUserChange(user.mutate({ name: event.target.value })), [user]
+    event => dispatch(updateUser({ ...user, name: event.target.value })), [user]
   );
 
   useEffect(() => {
@@ -47,7 +53,7 @@ const UserNameInput = ({ cellRef, user, onUserChange, onBlur }) => {
   return <input ref={inputRef} type="text" value={user.name} onChange={onChange} />;
 };
 
-const UserNameCell = ({ user, onUserChange }) => {
+const UserNameCell = ({ dispatch, user }) => {
   const cellRef = useRef();
   const [editing, setEditing] = useState(false);
 
@@ -57,34 +63,33 @@ const UserNameCell = ({ user, onUserChange }) => {
   return (
     <td ref={cellRef} onClick={onFocus}>
       {editing
-        ? <UserNameInput cellRef={cellRef} user={user} onUserChange={onUserChange} onBlur={onBlur} />
+        ? <UserNameInput cellRef={cellRef} dispatch={dispatch} onBlur={onBlur} user={user} />
         : user.name
       }
     </td>
   );
 };
 
-const UserRow = ({ user, onUserChange }) => {
+const UserRow = ({ dispatch, user }) => {
   const onCheck = useCallback(
-    event => onUserChange(user.mutate({ checked: event.target.checked })),
-    [user, onUserChange]
+    event => dispatch(updateUser({ ...user, checked: event.target.checked })),
+    [dispatch, user]
   );
 
   return (
     <tr className={user.checked ? "checked" : ""}>
       <td><input type="checkbox" checked={user.checked} onChange={onCheck} /></td>
-      <UserNameCell user={user} onUserChange={onUserChange} />
+      <UserNameCell dispatch={dispatch} user={user} />
     </tr>
   );
 };
 
-const UserAddRow = ({ onUserAdd }) => {
+const UserAddRow = ({ dispatch }) => {
   const [name, setName] = useState("");
-
   const onChange = useCallback(event => setName(event.target.value), []);
 
   const onAddClick = useCallback(() => {
-    onUserAdd(new User({ name }));
+    dispatch(createUser({ name }));
     setName("");
   }, [name]);
 
@@ -104,7 +109,7 @@ const UserAddRow = ({ onUserAdd }) => {
   );
 };
 
-const Users = ({ users, onUserAdd, onUserChange }) => (
+const Users = ({ dispatch, users }) => (
   <table>
     <thead>
       <tr>
@@ -113,48 +118,42 @@ const Users = ({ users, onUserAdd, onUserChange }) => (
       </tr>
     </thead>
     <tbody>
-      <UserAddRow onUserAdd={onUserAdd} />
+      <UserAddRow dispatch={dispatch} />
       {users.map(user => (
-        <UserRow key={user.uuid} user={user} onUserChange={onUserChange} />
+        <UserRow key={user.key} dispatch={dispatch} user={user} />
       ))}
     </tbody>
   </table>
 );
 
+const AppFooter = () => ReactDOM.createPortal(
+  <footer>
+    <p>
+      Copyright (c) 2019 CultureHQ
+      <br />
+      <a href="https://culturehq.com">
+        culturehq.com
+      </a>
+    </p>
+  </footer>,
+  document.body
+);
+
 const App = () => {
-  const [users, setUsers] = useState(makeUsers());
+  const [{ users }, dispatch] = useReducer(reducer, makeInitialState());
 
-  const onUserAdd = useCallback(user => setUsers(value => [user, ...value]), []);
-
-  const onUserChange = useCallback(
-    user => setUsers(value => value.map(prev => prev.uuid === user.uuid ? user : prev)), []
-  );
-
-  const onUsersRemove = useCallback(
-    () => setUsers(value => value.filter(prev => !prev.checked)), []
-  );
+  const onUsersDelete = useCallback(() => dispatch(deleteUsers()), []);
 
   return (
     <>
       <nav>CultureHQ similarity engine</nav>
       <main>
         {users.some(user => user.checked) && (
-          <button type="button" onClick={onUsersRemove}>Remove</button>
+          <button type="button" onClick={onUsersDelete}>Delete</button>
         )}
-        <Users users={users} onUserAdd={onUserAdd} onUserChange={onUserChange} />
+        <Users dispatch={dispatch} users={users} />
       </main>
-      {ReactDOM.createPortal(
-        <footer>
-          <p>
-            Copyright (c) 2019 CultureHQ
-            <br />
-            <a href="https://culturehq.com">
-              culturehq.com
-            </a>
-          </p>
-        </footer>,
-        document.body
-      )}
+      <AppFooter />
     </>
   );
 };
