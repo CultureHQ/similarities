@@ -1,19 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import ReactDOM from "react-dom";
-import Chance from "chance";
 
-const chance = new Chance();
+import { seedLocations, seedNames } from "./seeds";
 
 const makeInitialState = () => {
   const locations = Array(5).fill(0).map((_, index) => ({
     key: index,
-    name: chance.state({ full: true })
+    name: seedLocations[index]
   }));
 
   const users = Array(30).fill(0).map((_, index) => ({
     key: index,
     locationKey: locations[Math.floor(Math.random() * locations.length)].key,
-    name: chance.name(),
+    name: seedNames[index],
     checked: false
   }));
 

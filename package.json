@@ -23,10 +23,8 @@
   },
   "homepage": "https://github.com/CultureHQ/similarities#readme",
   "dependencies": {
-    "chance": "^1.0.18",
     "react": "=16.8.0-alpha.1",
-    "react-dom": "=16.8.0-alpha.1",
-    "uuid": "^3.3.2"
+    "react-dom": "=16.8.0-alpha.1"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",
