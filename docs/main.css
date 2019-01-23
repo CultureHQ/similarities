@@ -44,6 +44,10 @@ table {
   width: 100%;
 }
 
+tr.placeholder {
+  background-color: lightgray;
+}
+
 tr.checked {
   background-color: lightblue;
 }

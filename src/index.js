@@ -144,7 +144,7 @@ const AddRow = ({ dispatch, locations }) => {
   );
 
   return (
-    <tr>
+    <tr className="placeholder">
       <td>
         <button type="button" onClick={onAddClick}>+</button>
       </td>
