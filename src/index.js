@@ -14,10 +14,9 @@ const makeInitialState = () => {
   }));
 
   return {
-    leftUser: null,
+    currentUser: null,
     locations,
     nextUserKey: users.length,
-    rightUser: null,
     users
   };
 };
@@ -30,9 +29,7 @@ const deleteUser = user => ({ type: "DELETE_USER", user });
 
 const deleteUsers = () => ({ type: "DELETE_USERS" });
 
-const selectLeftUser = user => ({ type: "SELECT_LEFT_USER", user });
-
-const selectRightUser = user => ({ type: "SELECT_RIGHT_USER", user });
+const selectUser = user => ({ type: "SELECT_USER", user });
 
 const sortUsers = ({ field, direction, value }) => ({ type: "SORT_USERS", field, direction, value });
 
@@ -77,10 +74,8 @@ const reducer = (state, action) => {
       return { ...state, users: state.users.filter(user => user.key !== action.user.key) };
     case "DELETE_USERS":
       return { ...state, users: state.users.filter(user => !user.checked) };
-    case "SELECT_LEFT_USER":
-      return { ...state, leftUser: action.user };
-    case "SELECT_RIGHT_USER":
-      return { ...state, rightUser: action.user };
+    case "SELECT_USER":
+      return { ...state, currentUser: action.user };
     case "SORT_USERS":
       return { ...state, users: state.users.sort(makeSorter(action)) };
     case "TOGGLE_ALL":
@@ -251,14 +246,14 @@ const Table = ({ dispatch, locations, users }) => {
   );
 };
 
-const CompareUser = ({ onSelect, user, users }) => {
+const CompareUser = ({ dispatch, user, users }) => {
   const [search, setSearch] = useState("");
   const onSearchChange = useCallback(event => setSearch(event.target.value), []);
 
-  const onUserClick = useCallback(user => {
+  const onUserClick = useCallback(clicked => {
     setSearch("");
-    onSelect(user);
-  }, [onSelect]);
+    dispatch(selectUser(clicked));
+  }, [dispatch]);
 
   const results = useMemo(() => {
     if (!search) {
@@ -286,18 +281,6 @@ const CompareUser = ({ onSelect, user, users }) => {
   );
 };
 
-const Comparison = ({ leftUser, locations, rightUser }) => {
-  const locationAddend = (leftUser.locationKey == rightUser.locationKey ? 1 : 0) * locations.length;
-  const similarity = locationAddend;
-
-  return (
-    <ul>
-      <li>Location Addend: {locationAddend}</li>
-      <li>Similarity: {similarity}</li>
-    </ul>
-  );
-};
-
 const AppFooter = () => ReactDOM.createPortal(
   <footer>
     <p>
@@ -313,23 +296,16 @@ const AppFooter = () => ReactDOM.createPortal(
 
 const App = () => {
   const [state, dispatch] = useReducer(reducer, makeInitialState());
-  const { leftUser, locations, rightUser, users } = state;
+  const { currentUser, locations, users } = state;
 
   const onUsersDelete = useCallback(() => dispatch(deleteUsers()), []);
-
-  const onSelectLeft = useCallback(user => dispatch(selectLeftUser(user)), []);
-  const onSelectRight = useCallback(user => dispatch(selectRightUser(user)), []);
 
   return (
     <>
       <nav>CultureHQ similarity engine</nav>
       <main>
         <section>
-          <CompareUser onSelect={onSelectLeft} user={leftUser} users={users} />
-          <CompareUser onSelect={onSelectRight} user={rightUser} users={users} />
-          {leftUser && rightUser && (
-            <Comparison leftUser={leftUser} locations={locations} rightUser={rightUser} />
-          )}
+          <CompareUser dispatch={dispatch} user={currentUser} users={users} />
         </section>
         <section>
           {users.some(user => user.checked) && (
