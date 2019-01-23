@@ -4,14 +4,26 @@ import Chance from "chance";
 
 const chance = new Chance();
 
-const makeInitialState = () => ({
-  nextKey: 30,
-  users: Array(30).fill(0).map((_, index) => ({
+const makeInitialState = () => {
+  const locations = Array(5).fill(0).map((_, index) => ({
     key: index,
+    name: chance.state({ full: true })
+  }));
+
+  const users = Array(30).fill(0).map((_, index) => ({
+    key: index,
+    locationKey: locations[Math.floor(Math.random() * locations.length)].key,
     name: chance.name(),
     checked: false
-  }))
-});
+  }));
+
+  return {
+    locations,
+    nextLocationKey: locations.length,
+    nextUserKey: users.length,
+    users
+  };
+};
 
 const createUser = user => ({ type: "CREATE_USER", user });
 
@@ -22,21 +34,19 @@ const deleteUsers = () => ({ type: "DELETE_USERS" });
 const updateUser = user => ({ type: "UPDATE_USER", user });
 
 const reducer = (state, action) => {
-  const { users } = state;
-
   switch (action.type) {
     case "CREATE_USER":
       return {
         ...state,
-        nextKey: state.nextKey + 1,
-        users: [{ key: state.nextKey, checked: false, ...action.user }, ...users]
+        nextUserKey: state.nextUserKey + 1,
+        users: [{ key: state.nextUserKey, checked: false, ...action.user }, ...state.users]
       };
     case "DELETE_USER":
-      return { ...state, users: users.filter(user => user.key !== action.user.key) };
+      return { ...state, users: state.users.filter(user => user.key !== action.user.key) };
     case "DELETE_USERS":
-      return { ...state, users: users.filter(user => !user.checked) };
+      return { ...state, users: state.users.filter(user => !user.checked) };
     case "UPDATE_USER":
-      return { ...state, users: users.map(user => user.key === action.user.key ? action.user : user) };
+      return { ...state, users: state.users.map(user => user.key === action.user.key ? action.user : user) };
     default:
       return state;
   }
@@ -78,33 +88,54 @@ const UserNameCell = ({ dispatch, user }) => {
   );
 };
 
-const UserRow = ({ dispatch, user }) => {
-  const onCheck = useCallback(
+const Row = ({ dispatch, locations, user }) => {
+  const onUserCheck = useCallback(
     event => dispatch(updateUser({ ...user, checked: event.target.checked })),
     [dispatch, user]
   );
 
   const onDelete = useCallback(() => dispatch(deleteUser(user)), [dispatch, user]);
 
+  const onLocationCheck = useCallback(
+    event => dispatch(updateUser({ ...user, locationKey: parseInt(event.target.dataset.value) })),
+    [dispatch, user]
+  );
+
   return (
     <tr className={user.checked ? "checked" : ""}>
-      <td><input type="checkbox" checked={user.checked} onChange={onCheck} /></td>
+      <td><input type="checkbox" checked={user.checked} onChange={onUserCheck} /></td>
       <UserNameCell dispatch={dispatch} user={user} />
+      {locations.map(location => (
+        <td key={location.key}>
+          <input
+            type="checkbox"
+            checked={user.locationKey === location.key}
+            data-value={location.key}
+            onChange={onLocationCheck}
+          />
+        </td>
+      ))}
       <td><button type="button" onClick={onDelete}>x</button></td>
     </tr>
   );
 };
 
-const UserAddRow = ({ dispatch }) => {
+const AddRow = ({ dispatch, locations }) => {
   const [name, setName] = useState("");
-  const onChange = useCallback(event => setName(event.target.value), []);
+
+  const onNameChange = useCallback(event => setName(event.target.value), []);
+
+  const [locationKey, setLocationKey] = useState(locations[0].key);
+  const onLocationCheck = useCallback(
+    event => setLocationKey(parseInt(event.target.dataset.value)), []
+  );
 
   const onAddClick = useCallback(() => {
-    dispatch(createUser({ name }));
+    dispatch(createUser({ locationKey, name }));
     setName("");
-  }, [name]);
+  }, [locationKey, name]);
 
-  const onKeyDown = useCallback(
+  const onNameKeyDown = useCallback(
     event => event.key === "Enter" && onAddClick(), [onAddClick]
   );
 
@@ -114,25 +145,40 @@ const UserAddRow = ({ dispatch }) => {
         <button type="button" onClick={onAddClick}>+</button>
       </td>
       <td>
-        <input type="text" value={name} onChange={onChange} onKeyDown={onKeyDown} />
+        <input type="text" value={name} onChange={onNameChange} onKeyDown={onNameKeyDown} />
       </td>
+      {locations.map(location => (
+        <td key={location.key}>
+          <input
+            type="checkbox"
+            checked={locationKey === location.key}
+            data-value={location.key}
+            onChange={onLocationCheck}
+          />
+        </td>
+      ))}
       <td />
     </tr>
   );
 };
 
-const Users = ({ dispatch, users }) => (
+const Table = ({ dispatch, locations, users }) => (
   <table>
     <thead>
       <tr>
         <th />
         <th>Name</th>
+        {locations.map(location => (
+          <th key={location.key}>
+            {location.name}
+          </th>
+        ))}
       </tr>
     </thead>
     <tbody>
-      <UserAddRow dispatch={dispatch} />
+      <AddRow dispatch={dispatch} locations={locations} />
       {users.map(user => (
-        <UserRow key={user.key} dispatch={dispatch} user={user} />
+        <Row key={user.key} dispatch={dispatch} locations={locations} user={user} />
       ))}
     </tbody>
   </table>
@@ -152,7 +198,7 @@ const AppFooter = () => ReactDOM.createPortal(
 );
 
 const App = () => {
-  const [{ users }, dispatch] = useReducer(reducer, makeInitialState());
+  const [{ locations, users }, dispatch] = useReducer(reducer, makeInitialState());
 
   const onUsersDelete = useCallback(() => dispatch(deleteUsers()), []);
 
@@ -163,7 +209,7 @@ const App = () => {
         {users.some(user => user.checked) && (
           <button type="button" onClick={onUsersDelete}>Delete</button>
         )}
-        <Users dispatch={dispatch} users={users} />
+        <Table dispatch={dispatch} locations={locations} users={users} />
       </main>
       <AppFooter />
     </>
