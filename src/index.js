@@ -2,16 +2,30 @@ import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } 
 import ReactDOM from "react-dom";
 
 import { seedDepartments, seedLocations, seedUsers } from "./seeds";
+import seedInterests from "./interests.json";
 
 const makeInitialState = () => {
   const departments = seedDepartments.map((name, key) => ({ key, name }));
   const departmentKeys = departments.map(({ key }) => key);
 
+  const interests = {};
+  const interestKeys = [];
+
+  Object.keys(seedInterests).forEach(key => {
+    interests[key] = seedInterests[key].map(interest => {
+      const key = interestKeys.length;
+      interestKeys.push(key);
+
+      return { key, name: interest };
+    });
+  });
+
   const locations = seedLocations.map((name, key) => ({ key, name }));
 
   const users = seedUsers.map((name, key) => ({
     key,
-    departmentKeys: departmentKeys.filter(() => Math.random() < 0.2),
+    departmentKeys: departmentKeys.filter(() => Math.random() < 0.3),
+    interestKeys: interestKeys.filter(() => Math.random() < 0.1),
     locationKey: locations[Math.floor(Math.random() * locations.length)].key,
     name,
     checked: false
@@ -20,6 +34,7 @@ const makeInitialState = () => {
   return {
     currentUser: null,
     departments,
+    interests,
     locations,
     users
   };
@@ -102,7 +117,7 @@ const EditUserDepartment = ({ department, dispatch, user }) => {
   );
 };
 
-const EditRow = ({ departments, dispatch, locations, user }) => {
+const EditRow = ({ departments, dispatch, interests, locations, user }) => {
   const onNameChange = useCallback(
     event => dispatch(updateUser({ ...user, name: event.target.value })),
     [dispatch, user]
@@ -145,13 +160,18 @@ const EditRow = ({ departments, dispatch, locations, user }) => {
         </ul>
       </td>
       <td>
+        <ul>
+          
+        </ul>
+      </td>
+      <td>
         <button type="button" onClick={onUserDelete}>x</button>
       </td>
     </tr>
   );
 };
 
-const SummaryRow = ({ departments, dispatch, locations, user }) => {
+const SummaryRow = ({ dispatch, locations, user }) => {
   const onUserCheck = useCallback(
     () => dispatch(updateUser({ ...user, checked: true })), [dispatch, user]
   );
@@ -168,29 +188,23 @@ const SummaryRow = ({ departments, dispatch, locations, user }) => {
         {locations.find(location => location.key === user.locationKey).name}
       </td>
       <td>
-        {user.departmentKeys.map(departmentKey => (
-          departments.find(department => department.key === departmentKey).name
-        )).join(", ")}
+        {user.departmentKeys.length} departments
+      </td>
+      <td>
+        {user.interestKeys.length} interests
       </td>
       <td />
     </tr>
   );
 };
 
-const Row = ({ departments, dispatch, locations, user }) => {
-  const Component = user.checked ? EditRow : SummaryRow;
+const Row = props => {
+  const Component = props.user.checked ? EditRow : SummaryRow;
 
-  return (
-    <Component
-      departments={departments}
-      dispatch={dispatch}
-      locations={locations}
-      user={user}
-    />
-  );
+  return <Component {...props} />;
 };
 
-const Table = ({ departments, dispatch, locations, users }) => {
+const Table = ({ departments, dispatch, interests, locations, users }) => {
   const [allChecked, setAllChecked] = useState(false);
 
   const onAllCheck = useCallback(event => {
@@ -214,6 +228,9 @@ const Table = ({ departments, dispatch, locations, users }) => {
           <th>
             Departments
           </th>
+          <th>
+            Interests
+          </th>
           <th />
         </tr>
       </thead>
@@ -223,6 +240,7 @@ const Table = ({ departments, dispatch, locations, users }) => {
             key={user.key}
             departments={departments}
             dispatch={dispatch}
+            interests={interests}
             locations={locations}
             user={user}
           />
@@ -266,11 +284,17 @@ const UserSearch = ({ dispatch, user, users }) => {
   );
 };
 
-const makeCompare = (departments, locations, users) => (left, right) => {
-  const locationScore = (left.locationKey === right.locationKey ? 1 : 0) * locations.length;
-  const departmentScore = left.departmentKeys.filter(departmentKey => right.departmentKeys.includes(departmentKey)).length * departments.length;
+const makeCompare = (departments, interests, locations, users) => {
+  const interestsLength = Object.keys(interests).reduce((accum, key) => accum + interests[key].length, 0);
+  const maximum = Math.pow(departments.length, 2) + Math.pow(interestsLength, 2) + locations.length;
 
-  return 0.5 / (locationScore + departmentScore + 1) + 0.5;
+  return (left, right) => {
+    const departmentScore = left.departmentKeys.filter(departmentKey => right.departmentKeys.includes(departmentKey)).length * departments.length;
+    const interestScore = left.interestKeys.filter(interestKey => right.interestKeys.includes(interestKey)).length * interestsLength;
+    const locationScore = (left.locationKey === right.locationKey ? 1 : 0) * locations.length;
+
+    return (maximum - departmentScore + interestScore + locationScore) / maximum;
+  };
 };
 
 const getCoords = percent => [
@@ -278,8 +302,11 @@ const getCoords = percent => [
   Math.sin(2 * Math.PI * percent)
 ];
 
-const UserChart = ({ departments, locations, user, users }) => {
-  const compare = useMemo(() => makeCompare(departments, locations, users), [locations, users]);
+const UserChart = ({ departments, interests, locations, user, users }) => {
+  const compare = useMemo(
+    () => makeCompare(departments, interests, locations, users),
+    [departments, interests, locations, users]
+  );
 
   const interval = 1 / (users.length - 1);
   let cursor = -0.25;
@@ -328,7 +355,7 @@ const AppFooter = () => ReactDOM.createPortal(
 
 const App = () => {
   const [state, dispatch] = useReducer(reducer, makeInitialState());
-  const { currentUser, departments, locations, users } = state;
+  const { currentUser, departments, interests, locations, users } = state;
 
   return (
     <>
@@ -341,6 +368,7 @@ const App = () => {
               <h1>{currentUser.name}</h1>
               <UserChart
                 departments={departments}
+                interests={interests}
                 locations={locations}
                 user={currentUser}
                 users={users}
@@ -352,6 +380,7 @@ const App = () => {
           <Table
             departments={departments}
             dispatch={dispatch}
+            interests={interests}
             locations={locations}
             users={users}
           />
