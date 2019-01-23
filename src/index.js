@@ -16,68 +16,24 @@ const makeInitialState = () => {
   return {
     currentUser: null,
     locations,
-    nextUserKey: users.length,
     users
   };
 };
 
-const createUser = user => ({ type: "CREATE_USER", user });
-
-const deleteLocation = location => ({ type: "DELETE_LOCATION", location });
-
 const deleteUser = user => ({ type: "DELETE_USER", user });
 
-const deleteUsers = () => ({ type: "DELETE_USERS" });
-
 const selectUser = user => ({ type: "SELECT_USER", user });
-
-const sortUsers = ({ field, direction, value }) => ({ type: "SORT_USERS", field, direction, value });
 
 const toggleAll = checked => ({ type: "TOGGLE_ALL", checked });
 
 const updateUser = user => ({ type: "UPDATE_USER", user });
 
-const makeSorter = ({ field, direction, value }) => {
-  const toString = user => user[field].toLocaleString();
-  const toCompare = value ? (user => (toString(user) === value).toString()) : toString;
-
-  const factor = direction === "ASC" ? 1 : -1;
-  return (left, right) => toCompare(left).localeCompare(toCompare(right)) * factor;
-};
-
 const reducer = (state, action) => {
   switch (action.type) {
-    case "CREATE_USER":
-      return {
-        ...state,
-        nextUserKey: state.nextUserKey + 1,
-        users: [{ key: state.nextUserKey, checked: false, ...action.user }, ...state.users]
-      };
-    case "DELETE_LOCATION":
-      const nextLocations = state.locations.filter(location => location.key !== action.location.key);
-
-      return {
-        ...state,
-        locations: nextLocations,
-        users: state.users.map(user => {
-          if (user.locationKey !== location.key) {
-            return user;
-          }
-
-          return {
-            ...user,
-            locationKey: nextLocations[Math.floor(Math.random() * nextLocations.length)].key
-          };
-        })
-      };
     case "DELETE_USER":
       return { ...state, users: state.users.filter(user => user.key !== action.user.key) };
-    case "DELETE_USERS":
-      return { ...state, users: state.users.filter(user => !user.checked) };
     case "SELECT_USER":
       return { ...state, currentUser: action.user };
-    case "SORT_USERS":
-      return { ...state, users: state.users.sort(makeSorter(action)) };
     case "TOGGLE_ALL":
       return { ...state, users: state.users.map(user => ({ ...user, checked: action.checked })) };
     case "UPDATE_USER":
@@ -87,114 +43,100 @@ const reducer = (state, action) => {
   }
 };
 
-const UserNameInput = ({ cellRef, dispatch, onBlur, user }) => {
-  const inputRef = useRef();
+const EditRowCheckbox = ({ dispatch, location, user }) => {
+  const name = `ul-${user.key}-${location.key}`;
 
-  useEffect(() => inputRef.current.focus(), []);
-
-  const onChange = useCallback(
-    event => dispatch(updateUser({ ...user, name: event.target.value })), [user]
+  const onLocationCheck = useCallback(
+    event => dispatch(updateUser({ ...user, locationKey: parseInt(event.target.dataset.key) })),
+    [dispatch, user]
   );
 
-  useEffect(() => {
-    const onClick = event => !cellRef.current.contains(event.target) && onBlur();
-
-    document.addEventListener("click", onClick);
-    return () => document.removeEventListener("click", onClick);
-  });
-
-  return <input ref={inputRef} type="text" value={user.name} onChange={onChange} />;
+  return (
+    <label htmlFor={name}>
+      <input
+        type="checkbox"
+        id={name}
+        name={name}
+        checked={location.key === user.locationKey}
+        onChange={onLocationCheck}
+        data-key={location.key}
+      />
+      {" "}
+      {location.name}
+    </label>
+  );
 };
 
-const UserNameCell = ({ dispatch, user }) => {
-  const cellRef = useRef();
-  const [editing, setEditing] = useState(false);
+const EditRow = ({ dispatch, locations, user }) => {
+  const onNameChange = useCallback(
+    event => dispatch(updateUser({ ...user, name: event.target.value })),
+    [dispatch, user]
+  );
 
-  const onFocus = useCallback(() => setEditing(true), []);
-  const onBlur = useCallback(() => setEditing(false), []);
+  const onUserUncheck = useCallback(
+    () => dispatch(updateUser({ ...user, checked: false })),
+    [dispatch, user]
+  );
+
+  const onUserDelete = useCallback(
+    () => dispatch(deleteUser(user)),
+    [dispatch, user]
+  );
+
+  const onLocationCheck = useCallback(
+    event => dispatch(updateUser({ ...user, locationKey: parseInt(event.target.dataset.key) })),
+    [dispatch, user]
+  );
 
   return (
-    <td ref={cellRef} onClick={onFocus}>
-      {editing
-        ? <UserNameInput cellRef={cellRef} dispatch={dispatch} onBlur={onBlur} user={user} />
-        : user.name
-      }
-    </td>
+    <tr className="checked">
+      <td>
+        <input type="checkbox" checked onChange={onUserUncheck} />
+      </td>
+      <td>
+        <input type="text" value={user.name} onChange={onNameChange} />
+      </td>
+      <td>
+        <ul>
+          {locations.map(location => (
+            <li key={location.key}>
+              <EditRowCheckbox dispatch={dispatch} location={location} user={user} />
+            </li>
+          ))}
+        </ul>
+      </td>
+      <td>
+        <button type="button" onClick={onUserDelete}>x</button>
+      </td>
+    </tr>
+  );
+};
+
+const SummaryRow = ({ dispatch, locations, user }) => {
+  const onUserCheck = useCallback(
+    () => dispatch(updateUser({ ...user, checked: true })), [dispatch, user]
+  );
+
+  return (
+    <tr>
+      <td>
+        <input type="checkbox" checked={false} onChange={onUserCheck} />
+      </td>
+      <td>
+        {user.name}
+      </td>
+      <td>
+        {locations.find(location => location.key === user.locationKey).name}
+      </td>
+      <td />
+    </tr>
   );
 };
 
 const Row = ({ dispatch, locations, user }) => {
-  const onUserCheck = useCallback(
-    event => dispatch(updateUser({ ...user, checked: event.target.checked })),
-    [dispatch, user]
-  );
+  const Component = user.checked ? EditRow : SummaryRow;
 
-  const onDelete = useCallback(() => dispatch(deleteUser(user)), [dispatch, user]);
-
-  const onLocationCheck = useCallback(
-    event => dispatch(updateUser({ ...user, locationKey: parseInt(event.target.dataset.value) })),
-    [dispatch, user]
-  );
-
-  return (
-    <tr className={user.checked ? "checked" : ""}>
-      <td><input type="checkbox" checked={user.checked} onChange={onUserCheck} /></td>
-      <UserNameCell dispatch={dispatch} user={user} />
-      {locations.map(location => (
-        <td key={location.key}>
-          <input
-            type="checkbox"
-            checked={user.locationKey === location.key}
-            data-value={location.key}
-            onChange={onLocationCheck}
-          />
-        </td>
-      ))}
-      <td><button type="button" onClick={onDelete}>x</button></td>
-    </tr>
-  );
-};
-
-const AddRow = ({ dispatch, locations }) => {
-  const [name, setName] = useState("");
-
-  const onNameChange = useCallback(event => setName(event.target.value), []);
-
-  const [locationKey, setLocationKey] = useState(locations[0].key);
-  const onLocationCheck = useCallback(
-    event => setLocationKey(parseInt(event.target.dataset.value)), []
-  );
-
-  const onAddClick = useCallback(() => {
-    dispatch(createUser({ locationKey, name }));
-    setName("");
-  }, [locationKey, name]);
-
-  const onNameKeyDown = useCallback(
-    event => event.key === "Enter" && onAddClick(), [onAddClick]
-  );
-
-  return (
-    <tr className="placeholder">
-      <td>
-        <button type="button" onClick={onAddClick}>+</button>
-      </td>
-      <td>
-        <input type="text" value={name} onChange={onNameChange} onKeyDown={onNameKeyDown} />
-      </td>
-      {locations.map(location => (
-        <td key={location.key}>
-          <input
-            type="checkbox"
-            checked={locationKey === location.key}
-            data-value={location.key}
-            onChange={onLocationCheck}
-          />
-        </td>
-      ))}
-      <td />
-    </tr>
-  );
+  return <Component dispatch={dispatch} locations={locations} user={user} />;
 };
 
 const Table = ({ dispatch, locations, users }) => {
@@ -205,15 +147,6 @@ const Table = ({ dispatch, locations, users }) => {
     dispatch(toggleAll(event.target.checked));
   }, [dispatch]);
 
-  const onSort = useCallback(event => {
-    const { field, direction, value } = event.target.dataset;
-    dispatch(sortUsers({ field, direction, value }));
-  }, [dispatch])
-
-  const onDeleteLocation = useCallback(
-    location => dispatch(deleteLocation(location)), [dispatch]
-  );
-
   return (
     <table>
       <thead>
@@ -223,21 +156,13 @@ const Table = ({ dispatch, locations, users }) => {
           </th>
           <th>
             Name
-            <button type="button" onClick={onSort} data-field="name" data-direction="ASC">↑</button>
-            <button type="button" onClick={onSort} data-field="name" data-direction="DESC">↓</button>
           </th>
-          {locations.map(location => (
-            <th key={location.key}>
-              {location.name}
-              <button type="button" onClick={onSort} data-field="locationKey" data-direction="ASC" data-value={location.key}>↑</button>
-              <button type="button" onClick={onSort} data-field="locationKey" data-direction="DESC" data-value={location.key}>↓</button>
-              <button type="button" onClick={() => onDeleteLocation(location)}>x</button>
-            </th>
-          ))}
+          <th>
+            Location
+          </th>
         </tr>
       </thead>
       <tbody>
-        <AddRow dispatch={dispatch} locations={locations} />
         {users.map(user => (
           <Row key={user.key} dispatch={dispatch} locations={locations} user={user} />
         ))}
@@ -246,7 +171,7 @@ const Table = ({ dispatch, locations, users }) => {
   );
 };
 
-const CompareUser = ({ dispatch, user, users }) => {
+const UserSearch = ({ dispatch, user, users }) => {
   const [search, setSearch] = useState("");
   const onSearchChange = useCallback(event => setSearch(event.target.value), []);
 
@@ -262,7 +187,7 @@ const CompareUser = ({ dispatch, user, users }) => {
 
     const term = search.toLowerCase();
     return users.filter(({ name }) => name.toLowerCase().startsWith(term));
-  }, [search]);
+  }, [search, users]);
 
   return (
     <div>
@@ -276,9 +201,12 @@ const CompareUser = ({ dispatch, user, users }) => {
           ))}
         </div>
       )}
-      {user && user.name}
     </div>
   );
+};
+
+const UserChart = ({ locations, user, users }) => {
+  return <div />;
 };
 
 const AppFooter = () => ReactDOM.createPortal(
@@ -298,19 +226,15 @@ const App = () => {
   const [state, dispatch] = useReducer(reducer, makeInitialState());
   const { currentUser, locations, users } = state;
 
-  const onUsersDelete = useCallback(() => dispatch(deleteUsers()), [dispatch]);
-
   return (
     <>
       <nav>CultureHQ similarity engine</nav>
       <main>
         <section>
-          <CompareUser dispatch={dispatch} user={currentUser} users={users} />
+          <UserSearch dispatch={dispatch} user={currentUser} users={users} />
+          <UserChart locations={locations} user={currentUser} users={users} />
         </section>
         <section>
-          {users.some(user => user.checked) && (
-            <button type="button" onClick={onUsersDelete}>Delete</button>
-          )}
           <Table dispatch={dispatch} locations={locations} users={users} />
         </section>
       </main>
