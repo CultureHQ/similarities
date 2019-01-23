@@ -1,13 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 
-import { seedLocations, seedUsers } from "./seeds";
+import { seedDepartments, seedLocations, seedUsers } from "./seeds";
 
 const makeInitialState = () => {
+  const departments = seedDepartments.map((name, key) => ({ key, name }));
+  const departmentKeys = departments.map(({ key }) => key);
+
   const locations = seedLocations.map((name, key) => ({ key, name }));
 
   const users = seedUsers.map((name, key) => ({
     key,
+    departmentKeys: departmentKeys.filter(() => Math.random() < 0.2),
     locationKey: locations[Math.floor(Math.random() * locations.length)].key,
     name,
     checked: false
@@ -15,6 +19,7 @@ const makeInitialState = () => {
 
   return {
     currentUser: null,
+    departments,
     locations,
     users
   };
@@ -43,7 +48,7 @@ const reducer = (state, action) => {
   }
 };
 
-const EditRowCheckbox = ({ dispatch, location, user }) => {
+const EditUserLocation = ({ dispatch, location, user }) => {
   const name = `ul-${user.key}-${location.key}`;
 
   const onLocationCheck = useCallback(
@@ -67,7 +72,37 @@ const EditRowCheckbox = ({ dispatch, location, user }) => {
   );
 };
 
-const EditRow = ({ dispatch, locations, user }) => {
+const EditUserDepartment = ({ department, dispatch, user }) => {
+  const name = `ud-${user.key}-${department.key}`;
+
+  const onDepartmentCheck = useCallback(
+    event => dispatch(updateUser({
+      ...user,
+      departmentKeys: (
+        event.target.checked
+        ? [...user.departmentKeys, department.key]
+        : user.departmentKeys.filter(departmentKey => departmentKey !== department.key)
+      )
+    })),
+    [department, dispatch, user]
+  );
+
+  return (
+    <label htmlFor={name}>
+      <input
+        type="checkbox"
+        id={name}
+        name={name}
+        checked={user.departmentKeys.includes(department.key)}
+        onChange={onDepartmentCheck}
+      />
+      {" "}
+      {department.name}
+    </label>
+  );
+};
+
+const EditRow = ({ departments, dispatch, locations, user }) => {
   const onNameChange = useCallback(
     event => dispatch(updateUser({ ...user, name: event.target.value })),
     [dispatch, user]
@@ -83,11 +118,6 @@ const EditRow = ({ dispatch, locations, user }) => {
     [dispatch, user]
   );
 
-  const onLocationCheck = useCallback(
-    event => dispatch(updateUser({ ...user, locationKey: parseInt(event.target.dataset.key) })),
-    [dispatch, user]
-  );
-
   return (
     <tr className="checked">
       <td>
@@ -100,7 +130,16 @@ const EditRow = ({ dispatch, locations, user }) => {
         <ul>
           {locations.map(location => (
             <li key={location.key}>
-              <EditRowCheckbox dispatch={dispatch} location={location} user={user} />
+              <EditUserLocation dispatch={dispatch} location={location} user={user} />
+            </li>
+          ))}
+        </ul>
+      </td>
+      <td>
+        <ul>
+          {departments.map(department => (
+            <li key={department.key}>
+              <EditUserDepartment department={department} dispatch={dispatch} user={user} />
             </li>
           ))}
         </ul>
@@ -112,7 +151,7 @@ const EditRow = ({ dispatch, locations, user }) => {
   );
 };
 
-const SummaryRow = ({ dispatch, locations, user }) => {
+const SummaryRow = ({ departments, dispatch, locations, user }) => {
   const onUserCheck = useCallback(
     () => dispatch(updateUser({ ...user, checked: true })), [dispatch, user]
   );
@@ -128,18 +167,30 @@ const SummaryRow = ({ dispatch, locations, user }) => {
       <td>
         {locations.find(location => location.key === user.locationKey).name}
       </td>
+      <td>
+        {user.departmentKeys.map(departmentKey => (
+          departments.find(department => department.key === departmentKey).name
+        )).join(", ")}
+      </td>
       <td />
     </tr>
   );
 };
 
-const Row = ({ dispatch, locations, user }) => {
+const Row = ({ departments, dispatch, locations, user }) => {
   const Component = user.checked ? EditRow : SummaryRow;
 
-  return <Component dispatch={dispatch} locations={locations} user={user} />;
+  return (
+    <Component
+      departments={departments}
+      dispatch={dispatch}
+      locations={locations}
+      user={user}
+    />
+  );
 };
 
-const Table = ({ dispatch, locations, users }) => {
+const Table = ({ departments, dispatch, locations, users }) => {
   const [allChecked, setAllChecked] = useState(false);
 
   const onAllCheck = useCallback(event => {
@@ -160,11 +211,21 @@ const Table = ({ dispatch, locations, users }) => {
           <th>
             Location
           </th>
+          <th>
+            Departments
+          </th>
+          <th />
         </tr>
       </thead>
       <tbody>
         {users.map(user => (
-          <Row key={user.key} dispatch={dispatch} locations={locations} user={user} />
+          <Row
+            key={user.key}
+            departments={departments}
+            dispatch={dispatch}
+            locations={locations}
+            user={user}
+          />
         ))}
       </tbody>
     </table>
@@ -205,11 +266,11 @@ const UserSearch = ({ dispatch, user, users }) => {
   );
 };
 
-const makeCompare = (locations, users) => (left, right) => {
+const makeCompare = (departments, locations, users) => (left, right) => {
   const locationScore = (left.locationKey === right.locationKey ? 1 : 0) * locations.length;
-  const score = locationScore;
+  const departmentScore = left.departmentKeys.filter(departmentKey => right.departmentKeys.includes(departmentKey)).length * departments.length;
 
-  return 0.8 / (score + 1) + 0.2;
+  return 0.5 / (locationScore + departmentScore + 1) + 0.5;
 };
 
 const getCoords = percent => [
@@ -217,8 +278,8 @@ const getCoords = percent => [
   Math.sin(2 * Math.PI * percent)
 ];
 
-const UserChart = ({ locations, user, users }) => {
-  const compare = useMemo(() => makeCompare(locations, users), [locations, users]);
+const UserChart = ({ departments, locations, user, users }) => {
+  const compare = useMemo(() => makeCompare(departments, locations, users), [locations, users]);
 
   const interval = 1 / (users.length - 1);
   let cursor = -0.25;
@@ -267,7 +328,7 @@ const AppFooter = () => ReactDOM.createPortal(
 
 const App = () => {
   const [state, dispatch] = useReducer(reducer, makeInitialState());
-  const { currentUser, locations, users } = state;
+  const { currentUser, departments, locations, users } = state;
 
   return (
     <>
@@ -278,12 +339,22 @@ const App = () => {
           {currentUser && users.length > 1 && (
             <>
               <h1>{currentUser.name}</h1>
-              <UserChart locations={locations} user={currentUser} users={users} />
+              <UserChart
+                departments={departments}
+                locations={locations}
+                user={currentUser}
+                users={users}
+              />
             </>
           )}
         </section>
         <section>
-          <Table dispatch={dispatch} locations={locations} users={users} />
+          <Table
+            departments={departments}
+            dispatch={dispatch}
+            locations={locations}
+            users={users}
+          />
         </section>
       </main>
       <AppFooter />

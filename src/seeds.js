@@ -1,3 +1,11 @@
+export const seedDepartments = [
+  "Accounting",
+  "Customer Success",
+  "Engineering",
+  "Human Resources",
+  "Sales"
+];
+
 export const seedLocations = [
   "Austin, TX",
   "Boston, MA",
