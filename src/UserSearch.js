@@ -1,6 +1,8 @@
 import React, { useCallback, useMemo, useState } from "react";
 
-const UserSearch = ({ dispatch, user, users }) => {
+import { selectUser } from "./useSimilaritiesReducer";
+
+const UserSearch = ({ dispatch, users }) => {
   const [search, setSearch] = useState("");
   const onSearchChange = useCallback(event => setSearch(event.target.value), []);
 
@@ -24,7 +26,7 @@ const UserSearch = ({ dispatch, user, users }) => {
       {results.length > 0 && (
         <div className="search--results">
           {results.map(result => (
-            <button key={result.key} onClick={() => onUserClick(result)}>
+            <button key={result.key} type="button" onClick={() => onUserClick(result)}>
               {result.name}
             </button>
           ))}

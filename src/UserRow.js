@@ -1,10 +1,12 @@
 import React, { useCallback, useState } from "react";
 
+import { updateUser } from "./useSimilaritiesReducer";
+
 const EditUserLocation = ({ dispatch, location, user }) => {
   const name = `ul-${user.key}-${location.key}`;
 
   const onLocationCheck = useCallback(
-    event => dispatch(updateUser({ ...user, locationKey: parseInt(event.target.dataset.key) })),
+    event => dispatch(updateUser({ ...user, locationKey: parseInt(event.target.dataset.key, 10) })),
     [dispatch, user]
   );
 
@@ -32,8 +34,8 @@ const EditUserDepartment = ({ department, dispatch, user }) => {
       ...user,
       departmentKeys: (
         event.target.checked
-        ? [...user.departmentKeys, department.key]
-        : user.departmentKeys.filter(departmentKey => departmentKey !== department.key)
+          ? [...user.departmentKeys, department.key]
+          : user.departmentKeys.filter(departmentKey => departmentKey !== department.key)
       )
     })),
     [department, dispatch, user]
@@ -62,8 +64,8 @@ const EditUserInterest = ({ dispatch, interest, user }) => {
       ...user,
       interestKeys: (
         event.target.checked
-        ? [...user.interestKeys, interest.key]
-        : user.interestKeys.filter(interestKey => interestKey !== interest.key)
+          ? [...user.interestKeys, interest.key]
+          : user.interestKeys.filter(interestKey => interestKey !== interest.key)
       )
     })),
     [dispatch, interest, user]
@@ -84,7 +86,9 @@ const EditUserInterest = ({ dispatch, interest, user }) => {
   );
 };
 
-const EditUserInterestCategory = ({ currentInterestKey, dispatch, interestKey, interests, setCurrentInterestKey, user }) => {
+const EditUserInterestCategory = ({
+  currentInterestKey, dispatch, interestKey, interests, setCurrentInterestKey, user
+}) => {
   const name = `uic-${user.key}-${interestKey}`;
   const checked = currentInterestKey === interestKey;
 
@@ -123,8 +127,8 @@ const EditUserConnection = ({ dispatch, other, user }) => {
         ...user,
         connectionKeys: (
           event.target.checked
-          ? [...user.connectionKeys, other.key]
-          : user.connectionKeys.filter(connectionKeys => connectionKeys !== other.key)
+            ? [...user.connectionKeys, other.key]
+            : user.connectionKeys.filter(connectionKeys => connectionKeys !== other.key)
         )
       }));
 
@@ -132,8 +136,8 @@ const EditUserConnection = ({ dispatch, other, user }) => {
         ...other,
         connectionKeys: (
           event.target.checked
-          ? [...other.connectionKeys, user.key]
-          : other.connectionKeys.filter(connectionKey => connectionKey !== user.key)
+            ? [...other.connectionKeys, user.key]
+            : other.connectionKeys.filter(connectionKey => connectionKey !== user.key)
         )
       }));
     },
@@ -256,7 +260,8 @@ const SummaryRow = ({ dispatch, locations, user }) => {
 };
 
 const UserRow = props => {
-  const Component = props.user.checked ? EditRow : SummaryRow;
+  const { user } = props;
+  const Component = user.checked ? EditRow : SummaryRow;
 
   return <Component {...props} />;
 };

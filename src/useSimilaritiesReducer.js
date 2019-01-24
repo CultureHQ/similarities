@@ -31,16 +31,15 @@ const makeInitialState = () => {
 
   Object.keys(seedInterests).forEach(key => {
     interests[key] = seedInterests[key].map(interest => {
-      const key = interestKeys.length;
-      interestKeys.push(key);
+      interestKeys.push(interestKeys.length);
 
-      return { key, name: interest };
+      return { key: interestKeys.length, name: interest };
     });
   });
 
   const locations = seedLocations.map((name, key) => ({ key, name }));
 
-  let users = seedUsers.map((name, key) => ({
+  const users = seedUsers.map((name, key) => ({
     key,
     connectionKeys: [],
     departmentKeys: departmentKeys.filter(() => Math.random() < 0.3),
@@ -81,12 +80,15 @@ const reducer = (state, action) => {
   switch (action.type) {
     case "SELECT_USER":
       return { ...state, currentUser: action.user };
-    case "UPDATE_USER":
+    case "UPDATE_USER": {
+      const { currentUser } = state;
+
       return {
         ...state,
-        currentUser: state.currentUser && state.currentUser.key === action.user.key ? action.user : state.currentUser,
-        users: state.users.map(user => user.key === action.user.key ? action.user : user)
+        currentUser: currentUser && currentUser.key === action.user.key ? action.user : currentUser,
+        users: state.users.map(user => (user.key === action.user.key ? action.user : user))
       };
+    }
     case "UPDATE_WEIGHT":
       return { ...state, weights: { ...state.weights, [action.key]: action.value } };
     default:

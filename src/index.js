@@ -1,27 +1,52 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React from "react";
 import ReactDOM from "react-dom";
 
-import useSimilaritiesReducer, { selectUser, updateUser, updateWeight } from "./useSimilaritiesReducer";
+import useSimilaritiesReducer, { updateWeight } from "./useSimilaritiesReducer";
 import UserRow from "./UserRow";
 import UserSearch from "./UserSearch";
 
 const makeCompare = (departments, interests, locations, user, users, weights) => {
+  const interestsLength = (
+    Object.keys(interests).reduce((accum, key) => accum + interests[key].length, 0)
+  );
+
   const maximum = (
     weights.connected * users.length
     + weights.connections * users.length * users.length
     + weights.departments * departments.length * departments.length
-    + weights.interests * Object.keys(interests).reduce((accum, key) => accum + interests[key].length, 0)
+    + weights.interests * interestsLength
     + weights.locations * locations.length
   );
 
   return other => {
-    const connectedScore = weights.connected * (user.connectionKeys.includes(other.key) ? 1 : 0) * users.length;
-    const connectionScore = weights.connections * user.connectionKeys.filter(connectionKey => other.connectionKeys.includes(connectionKey)).length * users.length;
-    const departmentScore = weights.departments * user.departmentKeys.filter(departmentKey => other.departmentKeys.includes(departmentKey)).length * departments.length;
-    const interestScore = weights.interests * user.interestKeys.filter(interestKey => other.interestKeys.includes(interestKey)).length;
-    const locationScore = weights.locations * (user.locationKey === other.locationKey ? 1 : 0) * locations.length;
+    const scores = {
+      connected: (
+        weights.connected
+        * (user.connectionKeys.includes(other.key) ? 1 : 0)
+        * users.length
+      ),
+      connection: (
+        weights.connections
+        * user.connectionKeys.filter(key => other.connectionKeys.includes(key)).length
+        * users.length
+      ),
+      department: (
+        weights.departments
+        * user.departmentKeys.filter(key => other.departmentKeys.includes(key)).length
+        * departments.length
+      ),
+      interest: (
+        weights.interests
+        * user.interestKeys.filter(key => other.interestKeys.includes(key)).length
+      ),
+      location: (
+        weights.locations
+        * (user.locationKey === other.locationKey ? 1 : 0)
+        * locations.length
+      )
+    };
 
-    return (maximum - connectedScore - connectionScore - departmentScore - interestScore - locationScore) / maximum;
+    return Object.keys(scores).reduce((accum, key) => accum - scores[key], maximum) / maximum;
   };
 };
 
@@ -37,7 +62,8 @@ const makeSort = (departments, interests, locations, user, users, weights) => {
 };
 
 const Table = ({ currentUser, departments, dispatch, interests, locations, users, weights }) => {
-  const sorted = [...users].sort(makeSort(departments, interests, locations, currentUser, users, weights));
+  const sort = makeSort(departments, interests, locations, currentUser, users, weights);
+  const sorted = [...users].sort(sort);
 
   return (
     <table>
@@ -88,7 +114,14 @@ const UserChart = ({ departments, interests, locations, user, users, weights }) 
     return {
       key: other.key,
       initials: other.name.replace(/[^A-Z]/g, ""),
-      line: { x1: 0, y1: 0, x2: x * (0.9 - 0.075) * scale, y2: y * (0.9 - 0.075) * scale, stroke, strokeWidth: 0.01 },
+      line: {
+        x1: 0,
+        y1: 0,
+        x2: x * (0.9 - 0.075) * scale,
+        y2: y * (0.9 - 0.075) * scale,
+        stroke,
+        strokeWidth: 0.01
+      },
       circle: { cx: x * 0.9 * scale, cy: y * 0.9 * scale, r: 0.075, fill: "transparent", stroke, strokeWidth: 0.01 },
       text: { x: x * 0.9 * scale, y: y * 0.9 * scale, fontSize: "0.075px", textAnchor: "middle", dy: 0.03 }
     };
@@ -151,7 +184,7 @@ const App = () => {
       <nav>CultureHQ similarity engine</nav>
       <main>
         <header>
-          <UserSearch dispatch={dispatch} user={currentUser} users={users} />
+          <UserSearch dispatch={dispatch} users={users} />
           {currentUser && users.length > 1 && (
             <>
               <h1>{currentUser.name}</h1>
