@@ -4,6 +4,23 @@ import ReactDOM from "react-dom";
 import { seedDepartments, seedLocations, seedUsers } from "./seeds";
 import seedInterests from "./interests.json";
 
+const makeConnectionMaker = users => {
+  const getKey = () => Math.floor(Math.random() * users.length);
+
+  return () => {
+    let left = getKey();
+    let right = getKey();
+
+    while (left === right || users[left].connectionKeys.includes(right)) {
+      left = getKey();
+      right = getKey();
+    }
+
+    users[left].connectionKeys.push(right);
+    users[right].connectionKeys.push(left);
+  };
+};
+
 const makeInitialState = () => {
   const departments = seedDepartments.map((name, key) => ({ key, name }));
   const departmentKeys = departments.map(({ key }) => key);
@@ -22,14 +39,20 @@ const makeInitialState = () => {
 
   const locations = seedLocations.map((name, key) => ({ key, name }));
 
-  const users = seedUsers.map((name, key) => ({
+  let users = seedUsers.map((name, key) => ({
     key,
+    connectionKeys: [],
     departmentKeys: departmentKeys.filter(() => Math.random() < 0.3),
     interestKeys: interestKeys.filter(() => Math.random() < 0.1),
     locationKey: locations[Math.floor(Math.random() * locations.length)].key,
     name,
     checked: false
   }));
+
+  const makeConnection = makeConnectionMaker(users);
+  Array(users.length * 10).fill(0).forEach(() => {
+    makeConnection();
+  });
 
   return {
     currentUser: null,
@@ -173,7 +196,48 @@ const EditUserInterestCategory = ({ currentInterestKey, dispatch, interestKey, i
   );
 };
 
-const EditRow = ({ departments, dispatch, interests, locations, user }) => {
+const EditUserConnection = ({ dispatch, other, user }) => {
+  const name = `uc-${user.key}-${other.key}`;
+
+  const onConnectionCheck = useCallback(
+    event => {
+      dispatch(updateUser({
+        ...user,
+        connectionKeys: (
+          event.target.checked
+          ? [...user.connectionKeys, other.key]
+          : user.connectionKeys.filter(connectionKeys => connectionKeys !== other.key)
+        )
+      }));
+
+      dispatch(updateUser({
+        ...other,
+        connectionKeys: (
+          event.target.checked
+          ? [...other.connectionKeys, user.key]
+          : other.connectionKeys.filter(connectionKey => connectionKey !== user.key)
+        )
+      }));
+    },
+    [dispatch, other, user]
+  );
+
+  return (
+    <label htmlFor={name}>
+      <input
+        type="checkbox"
+        id={name}
+        name={name}
+        checked={user.connectionKeys.includes(other.key)}
+        onChange={onConnectionCheck}
+      />
+      {" "}
+      {other.name}
+    </label>
+  );
+};
+
+const EditRow = ({ departments, dispatch, interests, locations, user, users }) => {
   const onNameChange = useCallback(
     event => dispatch(updateUser({ ...user, name: event.target.value })),
     [dispatch, user]
@@ -227,6 +291,15 @@ const EditRow = ({ departments, dispatch, interests, locations, user }) => {
           ))}
         </ul>
       </td>
+      <td>
+        <ul>
+          {users.map(other => (
+            <li key={other.key}>
+              <EditUserConnection dispatch={dispatch} other={other} user={user} />
+            </li>
+          ))}
+        </ul>
+      </td>
     </tr>
   );
 };
@@ -253,6 +326,9 @@ const SummaryRow = ({ dispatch, locations, user }) => {
       <td>
         {user.interestKeys.length} interests
       </td>
+      <td>
+        {user.connectionKeys.length} connections
+      </td>
     </tr>
   );
 };
@@ -263,18 +339,31 @@ const Row = props => {
   return <Component {...props} />;
 };
 
-const I = 0.2;
+const CONSTANTS = {
+  CONNECTED: 1,
+  CONNECTIONS: 0.8,
+  INTERESTS: 0.6,
+  DEPARTMENTS: 0.4,
+  LOCATIONS: 0.2
+};
 
 const makeCompare = (departments, interests, locations, user, users) => {
-  const interestsLength = Object.keys(interests).reduce((accum, key) => accum + interests[key].length, 0);
-  const maximum = Math.pow(departments.length, 2) + I * interestsLength + locations.length;
+  const maximum = (
+    CONSTANTS.CONNECTED * users.length
+    + CONSTANTS.CONNECTIONS * users.length * users.length
+    + CONSTANTS.DEPARTMENTS * departments.length * departments.length
+    + CONSTANTS.INTERESTS * Object.keys(interests).reduce((accum, key) => accum + interests[key].length, 0)
+    + CONSTANTS.LOCATIONS * locations.length
+  );
 
   return other => {
-    const departmentScore = user.departmentKeys.filter(departmentKey => other.departmentKeys.includes(departmentKey)).length * departments.length;
-    const interestScore = user.interestKeys.filter(interestKey => other.interestKeys.includes(interestKey)).length;
-    const locationScore = (user.locationKey === other.locationKey ? 1 : 0) * locations.length;
+    const connectedScore = CONSTANTS.CONNECTED * (user.connectionKeys.includes(other.key) ? 1 : 0) * users.length;
+    const connectionScore = CONSTANTS.CONNECTIONS * user.connectionKeys.filter(connectionKey => other.connectionKeys.includes(connectionKey)).length * users.length;
+    const departmentScore = CONSTANTS.DEPARTMENTS * user.departmentKeys.filter(departmentKey => other.departmentKeys.includes(departmentKey)).length * departments.length;
+    const interestScore = CONSTANTS.INTERESTS * user.interestKeys.filter(interestKey => other.interestKeys.includes(interestKey)).length;
+    const locationScore = CONSTANTS.LOCATIONS * (user.locationKey === other.locationKey ? 1 : 0) * locations.length;
 
-    return (maximum - departmentScore - I * interestScore - locationScore) / maximum;
+    return (maximum - connectedScore - connectionScore - departmentScore - interestScore - locationScore) / maximum;
   };
 };
 
@@ -297,18 +386,11 @@ const Table = ({ currentUser, departments, dispatch, interests, locations, users
       <thead>
         <tr>
           <th />
-          <th>
-            Name
-          </th>
-          <th>
-            Location
-          </th>
-          <th>
-            Departments
-          </th>
-          <th>
-            Interests
-          </th>
+          <th>Name</th>
+          <th>Location</th>
+          <th>Departments</th>
+          <th>Interests</th>
+          <th>Connections</th>
         </tr>
       </thead>
       <tbody>
@@ -320,6 +402,7 @@ const Table = ({ currentUser, departments, dispatch, interests, locations, users
             interests={interests}
             locations={locations}
             user={user}
+            users={users}
           />
         ))}
       </tbody>
@@ -373,7 +456,7 @@ const UserChart = ({ departments, interests, locations, user, users }) => {
   const compare = makeCompare(departments, interests, locations, user, users);
   const slices = users.filter(({ key }) => key !== user.key).map(other => {
     const scale = compare(other);
-    const stroke = `hsl(${120 * (1 - scale) * 3}, 100%, 45%)`;
+    const stroke = `hsl(${120 * (1 - scale)}, 100%, 45%)`;
 
     const [x, y] = getCoords(cursor + (interval / 2));
     cursor += interval;
