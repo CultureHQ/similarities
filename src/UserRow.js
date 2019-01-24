@@ -255,10 +255,10 @@ const SummaryRow = ({ dispatch, locations, user }) => {
   );
 };
 
-const Row = props => {
+const UserRow = props => {
   const Component = props.user.checked ? EditRow : SummaryRow;
 
   return <Component {...props} />;
 };
 
-export default Row;
+export default UserRow;

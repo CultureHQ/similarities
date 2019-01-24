@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import ReactDOM from "react-dom";
 
 import useSimilaritiesReducer, { selectUser, updateUser, updateWeight } from "./useSimilaritiesReducer";
-import Row from "./Row";
+import UserRow from "./UserRow";
 import UserSearch from "./UserSearch";
 
 const makeCompare = (departments, interests, locations, user, users, weights) => {
@@ -53,7 +53,7 @@ const Table = ({ currentUser, departments, dispatch, interests, locations, users
       </thead>
       <tbody>
         {sorted.map(user => (
-          <Row
+          <UserRow
             key={user.key}
             departments={departments}
             dispatch={dispatch}
