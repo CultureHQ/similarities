@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 
-import { seedDepartments, seedLocations, seedUsers } from "./seeds";
-import seedInterests from "./interests.json";
+import seedDepartments from "./seeds/departments.json";
+import seedInterests from "./seeds/interests.json";
+import seedLocations from "./seeds/locations.json";
+import seedUsers from "./seeds/users.json";
 
 const makeConnectionMaker = users => {
   const getKey = () => Math.floor(Math.random() * users.length);

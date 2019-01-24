@@ -1,20 +1,4 @@
-export const seedDepartments = [
-  "Accounting",
-  "Customer Success",
-  "Engineering",
-  "Human Resources",
-  "Sales"
-];
-
-export const seedLocations = [
-  "Austin, TX",
-  "Boston, MA",
-  "New York, NY",
-  "San Francisco, CA",
-  "Washington, D.C."
-];
-
-export const seedUsers = [
+[
   "Brian Franklin",
   "Cole Shaw",
   "Corey Harper",
@@ -45,4 +29,4 @@ export const seedUsers = [
   "Steve Rodriquez",
   "Tommy Carr",
   "Tony Cruz"
-];
+]
