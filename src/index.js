@@ -44,8 +44,6 @@ const deleteUser = user => ({ type: "DELETE_USER", user });
 
 const selectUser = user => ({ type: "SELECT_USER", user });
 
-const toggleAll = checked => ({ type: "TOGGLE_ALL", checked });
-
 const updateUser = user => ({ type: "UPDATE_USER", user });
 
 const reducer = (state, action) => {
@@ -54,8 +52,6 @@ const reducer = (state, action) => {
       return { ...state, users: state.users.filter(user => user.key !== action.user.key) };
     case "SELECT_USER":
       return { ...state, currentUser: action.user };
-    case "TOGGLE_ALL":
-      return { ...state, users: state.users.map(user => ({ ...user, checked: action.checked })) };
     case "UPDATE_USER":
       return {
         ...state,
@@ -280,21 +276,40 @@ const Row = props => {
   return <Component {...props} />;
 };
 
-const Table = ({ departments, dispatch, interests, locations, users }) => {
-  const [allChecked, setAllChecked] = useState(false);
+const I = 0.2;
 
-  const onAllCheck = useCallback(event => {
-    setAllChecked(event.target.checked);
-    dispatch(toggleAll(event.target.checked));
-  }, [dispatch]);
+const makeCompare = (departments, interests, locations, user, users) => {
+  const interestsLength = Object.keys(interests).reduce((accum, key) => accum + interests[key].length, 0);
+  const maximum = Math.pow(departments.length, 2) + I * interestsLength + locations.length;
+
+  return other => {
+    const departmentScore = user.departmentKeys.filter(departmentKey => other.departmentKeys.includes(departmentKey)).length * departments.length;
+    const interestScore = user.interestKeys.filter(interestKey => other.interestKeys.includes(interestKey)).length;
+    const locationScore = (user.locationKey === other.locationKey ? 1 : 0) * locations.length;
+
+    return (maximum - departmentScore - I * interestScore - locationScore) / maximum;
+  };
+};
+
+const makeSort = (departments, interests, locations, user, users) => {
+  if (user) {
+    const compare = makeCompare(departments, interests, locations, user, users);
+    const scores = users.reduce((accum, other) => ({ ...accum, [other.key]: compare(other) }), {});
+
+    return (left, right) => scores[left.key] - scores[right.key];
+  }
+
+  return (left, right) => left.name.localeCompare(right.name);
+};
+
+const Table = ({ currentUser, departments, dispatch, interests, locations, users }) => {
+  const sorted = [...users].sort(makeSort(departments, interests, locations, currentUser, users));
 
   return (
     <table>
       <thead>
         <tr>
-          <th>
-            <input type="checkbox" checked={allChecked} onChange={onAllCheck} />
-          </th>
+          <th />
           <th>
             Name
           </th>
@@ -311,7 +326,7 @@ const Table = ({ departments, dispatch, interests, locations, users }) => {
         </tr>
       </thead>
       <tbody>
-        {users.map(user => (
+        {sorted.map(user => (
           <Row
             key={user.key}
             departments={departments}
@@ -360,21 +375,6 @@ const UserSearch = ({ dispatch, user, users }) => {
   );
 };
 
-const I = 0.2;
-
-const makeCompare = (departments, interests, locations, user, users) => {
-  const interestsLength = Object.keys(interests).reduce((accum, key) => accum + interests[key].length, 0);
-  const maximum = Math.pow(departments.length, 2) + I * interestsLength + locations.length;
-
-  return other => {
-    const departmentScore = user.departmentKeys.filter(departmentKey => other.departmentKeys.includes(departmentKey)).length * departments.length;
-    const interestScore = user.interestKeys.filter(interestKey => other.interestKeys.includes(interestKey)).length;
-    const locationScore = (user.locationKey === other.locationKey ? 1 : 0) * locations.length;
-
-    return (maximum - departmentScore - I * interestScore - locationScore) / maximum;
-  };
-};
-
 const getCoords = percent => [
   Math.cos(2 * Math.PI * percent),
   Math.sin(2 * Math.PI * percent)
@@ -387,14 +387,16 @@ const UserChart = ({ departments, interests, locations, user, users }) => {
   const compare = makeCompare(departments, interests, locations, user, users);
   const slices = users.filter(({ key }) => key !== user.key).map(other => {
     const scale = compare(other);
+    const stroke = `hsl(${120 * (1 - scale) * 3}, 100%, 45%)`;
+
     const [x, y] = getCoords(cursor + (interval / 2));
     cursor += interval;
 
     return {
       key: other.key,
       initials: other.name.replace(/[^A-Z]/g, ""),
-      line: { x1: 0, y1: 0, x2: x * (0.9 - 0.075) * scale, y2: y * (0.9 - 0.075) * scale, stroke: "#666", strokeWidth: 0.01 },
-      circle: { cx: x * 0.9 * scale, cy: y * 0.9 * scale, r: 0.075, fill: "transparent", stroke: "#666", strokeWidth: 0.01 },
+      line: { x1: 0, y1: 0, x2: x * (0.9 - 0.075) * scale, y2: y * (0.9 - 0.075) * scale, stroke, strokeWidth: 0.01 },
+      circle: { cx: x * 0.9 * scale, cy: y * 0.9 * scale, r: 0.075, fill: "transparent", stroke, strokeWidth: 0.01 },
       text: { x: x * 0.9 * scale, y: y * 0.9 * scale, fontSize: "0.075px", textAnchor: "middle", dy: 0.03 }
     };
   });
@@ -452,6 +454,7 @@ const App = () => {
         </header>
         <section>
           <Table
+            currentUser={currentUser}
             departments={departments}
             dispatch={dispatch}
             interests={interests}
