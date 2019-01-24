@@ -40,16 +40,12 @@ const makeInitialState = () => {
   };
 };
 
-const deleteUser = user => ({ type: "DELETE_USER", user });
-
 const selectUser = user => ({ type: "SELECT_USER", user });
 
 const updateUser = user => ({ type: "UPDATE_USER", user });
 
 const reducer = (state, action) => {
   switch (action.type) {
-    case "DELETE_USER":
-      return { ...state, users: state.users.filter(user => user.key !== action.user.key) };
     case "SELECT_USER":
       return { ...state, currentUser: action.user };
     case "UPDATE_USER":
@@ -188,11 +184,6 @@ const EditRow = ({ departments, dispatch, interests, locations, user }) => {
     [dispatch, user]
   );
 
-  const onUserDelete = useCallback(
-    () => dispatch(deleteUser(user)),
-    [dispatch, user]
-  );
-
   const [currentInterestKey, setCurrentInterestKey] = useState(null);
 
   return (
@@ -236,9 +227,6 @@ const EditRow = ({ departments, dispatch, interests, locations, user }) => {
           ))}
         </ul>
       </td>
-      <td>
-        <button type="button" onClick={onUserDelete}>x</button>
-      </td>
     </tr>
   );
 };
@@ -265,7 +253,6 @@ const SummaryRow = ({ dispatch, locations, user }) => {
       <td>
         {user.interestKeys.length} interests
       </td>
-      <td />
     </tr>
   );
 };
@@ -322,7 +309,6 @@ const Table = ({ currentUser, departments, dispatch, interests, locations, users
           <th>
             Interests
           </th>
-          <th />
         </tr>
       </thead>
       <tbody>
@@ -360,10 +346,10 @@ const UserSearch = ({ dispatch, user, users }) => {
   }, [search, users]);
 
   return (
-    <div>
+    <div className="search">
       <input type="text" value={search} onChange={onSearchChange} />
       {results.length > 0 && (
-        <div>
+        <div className="search--results">
           {results.map(result => (
             <button key={result.key} onClick={() => onUserClick(result)}>
               {result.name}
