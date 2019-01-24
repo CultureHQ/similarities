@@ -59,6 +59,13 @@ const makeInitialState = () => {
     departments,
     interests,
     locations,
+    weights: {
+      connected: 1,
+      connections: 0.8,
+      interests: 0.6,
+      departments: 0.4,
+      locations: 0.2
+    },
     users
   };
 };
@@ -66,6 +73,8 @@ const makeInitialState = () => {
 const selectUser = user => ({ type: "SELECT_USER", user });
 
 const updateUser = user => ({ type: "UPDATE_USER", user });
+
+const updateWeight = ({ key, value }) => ({ type: "UPDATE_WEIGHT", key, value });
 
 const reducer = (state, action) => {
   switch (action.type) {
@@ -77,6 +86,8 @@ const reducer = (state, action) => {
         currentUser: state.currentUser && state.currentUser.key === action.user.key ? action.user : state.currentUser,
         users: state.users.map(user => user.key === action.user.key ? action.user : user)
       };
+    case "UPDATE_WEIGHT":
+      return { ...state, weights: { ...state.weights, [action.key]: action.value } };
     default:
       return state;
   }
@@ -277,28 +288,32 @@ const EditRow = ({ departments, dispatch, interests, locations, user, users }) =
         </ul>
       </td>
       <td>
-        <ul>
-          {Object.keys(interests).map(key => (
-            <EditUserInterestCategory
-              key={key}
-              currentInterestKey={currentInterestKey}
-              dispatch={dispatch}
-              interestKey={key}
-              interests={interests}
-              setCurrentInterestKey={setCurrentInterestKey}
-              user={user}
-            />
-          ))}
-        </ul>
+        <div className="list">
+          <ul>
+            {Object.keys(interests).map(key => (
+              <EditUserInterestCategory
+                key={key}
+                currentInterestKey={currentInterestKey}
+                dispatch={dispatch}
+                interestKey={key}
+                interests={interests}
+                setCurrentInterestKey={setCurrentInterestKey}
+                user={user}
+              />
+            ))}
+          </ul>
+        </div>
       </td>
       <td>
-        <ul>
-          {users.map(other => (
-            <li key={other.key}>
-              <EditUserConnection dispatch={dispatch} other={other} user={user} />
-            </li>
-          ))}
-        </ul>
+        <div className="list">
+          <ul>
+            {users.map(other => (
+              <li key={other.key}>
+                <EditUserConnection dispatch={dispatch} other={other} user={user} />
+              </li>
+            ))}
+          </ul>
+        </div>
       </td>
     </tr>
   );
@@ -339,37 +354,29 @@ const Row = props => {
   return <Component {...props} />;
 };
 
-const CONSTANTS = {
-  CONNECTED: 1,
-  CONNECTIONS: 0.8,
-  INTERESTS: 0.6,
-  DEPARTMENTS: 0.4,
-  LOCATIONS: 0.2
-};
-
-const makeCompare = (departments, interests, locations, user, users) => {
+const makeCompare = (departments, interests, locations, user, users, weights) => {
   const maximum = (
-    CONSTANTS.CONNECTED * users.length
-    + CONSTANTS.CONNECTIONS * users.length * users.length
-    + CONSTANTS.DEPARTMENTS * departments.length * departments.length
-    + CONSTANTS.INTERESTS * Object.keys(interests).reduce((accum, key) => accum + interests[key].length, 0)
-    + CONSTANTS.LOCATIONS * locations.length
+    weights.connected * users.length
+    + weights.connections * users.length * users.length
+    + weights.departments * departments.length * departments.length
+    + weights.interests * Object.keys(interests).reduce((accum, key) => accum + interests[key].length, 0)
+    + weights.locations * locations.length
   );
 
   return other => {
-    const connectedScore = CONSTANTS.CONNECTED * (user.connectionKeys.includes(other.key) ? 1 : 0) * users.length;
-    const connectionScore = CONSTANTS.CONNECTIONS * user.connectionKeys.filter(connectionKey => other.connectionKeys.includes(connectionKey)).length * users.length;
-    const departmentScore = CONSTANTS.DEPARTMENTS * user.departmentKeys.filter(departmentKey => other.departmentKeys.includes(departmentKey)).length * departments.length;
-    const interestScore = CONSTANTS.INTERESTS * user.interestKeys.filter(interestKey => other.interestKeys.includes(interestKey)).length;
-    const locationScore = CONSTANTS.LOCATIONS * (user.locationKey === other.locationKey ? 1 : 0) * locations.length;
+    const connectedScore = weights.connected * (user.connectionKeys.includes(other.key) ? 1 : 0) * users.length;
+    const connectionScore = weights.connections * user.connectionKeys.filter(connectionKey => other.connectionKeys.includes(connectionKey)).length * users.length;
+    const departmentScore = weights.departments * user.departmentKeys.filter(departmentKey => other.departmentKeys.includes(departmentKey)).length * departments.length;
+    const interestScore = weights.interests * user.interestKeys.filter(interestKey => other.interestKeys.includes(interestKey)).length;
+    const locationScore = weights.locations * (user.locationKey === other.locationKey ? 1 : 0) * locations.length;
 
     return (maximum - connectedScore - connectionScore - departmentScore - interestScore - locationScore) / maximum;
   };
 };
 
-const makeSort = (departments, interests, locations, user, users) => {
+const makeSort = (departments, interests, locations, user, users, weights) => {
   if (user) {
-    const compare = makeCompare(departments, interests, locations, user, users);
+    const compare = makeCompare(departments, interests, locations, user, users, weights);
     const scores = users.reduce((accum, other) => ({ ...accum, [other.key]: compare(other) }), {});
 
     return (left, right) => scores[left.key] - scores[right.key];
@@ -378,8 +385,8 @@ const makeSort = (departments, interests, locations, user, users) => {
   return (left, right) => left.name.localeCompare(right.name);
 };
 
-const Table = ({ currentUser, departments, dispatch, interests, locations, users }) => {
-  const sorted = [...users].sort(makeSort(departments, interests, locations, currentUser, users));
+const Table = ({ currentUser, departments, dispatch, interests, locations, users, weights }) => {
+  const sorted = [...users].sort(makeSort(departments, interests, locations, currentUser, users, weights));
 
   return (
     <table>
@@ -430,7 +437,7 @@ const UserSearch = ({ dispatch, user, users }) => {
 
   return (
     <div className="search">
-      <input type="text" value={search} onChange={onSearchChange} />
+      <input type="text" value={search} onChange={onSearchChange} placeholder="Search for a user" />
       {results.length > 0 && (
         <div className="search--results">
           {results.map(result => (
@@ -449,11 +456,11 @@ const getCoords = percent => [
   Math.sin(2 * Math.PI * percent)
 ];
 
-const UserChart = ({ departments, interests, locations, user, users }) => {
+const UserChart = ({ departments, interests, locations, user, users, weights }) => {
   const interval = 1 / (users.length - 1);
   let cursor = -0.25;
 
-  const compare = makeCompare(departments, interests, locations, user, users);
+  const compare = makeCompare(departments, interests, locations, user, users, weights);
   const slices = users.filter(({ key }) => key !== user.key).map(other => {
     const scale = compare(other);
     const stroke = `hsl(${120 * (1 - scale)}, 100%, 45%)`;
@@ -485,6 +492,26 @@ const UserChart = ({ departments, interests, locations, user, users }) => {
   );
 };
 
+const Weight = ({ dispatch, weightKey, weights }) => {
+  const onChange = event => dispatch(updateWeight({ key: weightKey, value: event.target.value }));
+
+  return (
+    <label htmlFor={weightKey}>
+      {`${weightKey[0].toUpperCase()}${weightKey.slice(1)} `}
+      <input
+        name={weightKey}
+        id={weightKey}
+        type="number"
+        min={0}
+        step={0.1}
+        max={3}
+        value={weights[weightKey]}
+        onChange={onChange}
+      />
+    </label>
+  );
+};
+
 const AppFooter = () => ReactDOM.createPortal(
   <footer>
     <p>
@@ -500,7 +527,7 @@ const AppFooter = () => ReactDOM.createPortal(
 
 const App = () => {
   const [state, dispatch] = useReducer(reducer, makeInitialState());
-  const { currentUser, departments, interests, locations, users } = state;
+  const { currentUser, departments, interests, locations, users, weights } = state;
 
   return (
     <>
@@ -517,10 +544,16 @@ const App = () => {
                 locations={locations}
                 user={currentUser}
                 users={users}
+                weights={weights}
               />
             </>
           )}
         </header>
+        <section className="weights">
+          {Object.keys(weights).map(weightKey => (
+            <Weight key={weightKey} dispatch={dispatch} weightKey={weightKey} weights={weights} />
+          ))}
+        </section>
         <section>
           <Table
             currentUser={currentUser}
@@ -529,6 +562,7 @@ const App = () => {
             interests={interests}
             locations={locations}
             users={users}
+            weights={weights}
           />
         </section>
       </main>
