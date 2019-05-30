@@ -776,10 +776,10 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@culturehq/eslint-config@^1.2.0":
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/@culturehq/eslint-config/-/eslint-config-1.2.0.tgz#69eba0b40c2fb9624aaeb91491005f636779bef3"
-  integrity sha512-NU3wDzH1mkiWXkYkRMOJ53XFeT9Bk7sYER/VNfscU5mui6fV1TUSuTDIdeejaXmQIqEVqwIWagyMd00QorST2Q==
+"@culturehq/eslint-config@^1.2.1":
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/@culturehq/eslint-config/-/eslint-config-1.2.1.tgz#1804d3fe66d901f15234f72415eca5df4aab51c9"
+  integrity sha512-vQXLDgtsCLXUAuCUlxIiwB450WvRu4uoUXO324ugk2zwUlAPvwbDVd8SmnJb0ejz+qWZh2fSjjITBKhaSxhLYw==
   dependencies:
     babel-eslint "^10.0.1"
     eslint-config-airbnb "^17.1.0"
