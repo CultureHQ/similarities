@@ -22,7 +22,13 @@ const UserSearch = ({ dispatch, users }) => {
 
   return (
     <div className="search">
-      <input type="text" value={search} onChange={onSearchChange} placeholder="Search for a user" />
+      <input
+        type="search"
+        value={search}
+        onChange={onSearchChange}
+        placeholder="Search for a user"
+        aria-label="User search"
+      />
       {results.length > 0 && (
         <div className="search--results">
           {results.map(result => (

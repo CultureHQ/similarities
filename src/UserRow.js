@@ -14,6 +14,7 @@ const EditUserLocation = ({ dispatch, location, user }) => {
     <label htmlFor={name}>
       <input
         type="checkbox"
+        aria-label="Active"
         id={name}
         name={name}
         checked={location.key === user.locationKey}
@@ -45,6 +46,7 @@ const EditUserDepartment = ({ department, dispatch, user }) => {
     <label htmlFor={name}>
       <input
         type="checkbox"
+        aria-label="Active"
         id={name}
         name={name}
         checked={user.departmentKeys.includes(department.key)}
@@ -75,6 +77,7 @@ const EditUserInterest = ({ dispatch, interest, user }) => {
     <label htmlFor={name}>
       <input
         type="checkbox"
+        aria-label="Active"
         id={name}
         name={name}
         checked={user.interestKeys.includes(interest.key)}
@@ -97,6 +100,7 @@ const EditUserInterestCategory = ({
       <label htmlFor={name}>
         <input
           type="checkbox"
+          aria-label="Active"
           id={name}
           name={name}
           checked={checked}
@@ -148,6 +152,7 @@ const EditUserConnection = ({ dispatch, other, user }) => {
     <label htmlFor={name}>
       <input
         type="checkbox"
+        aria-label="Active"
         id={name}
         name={name}
         checked={user.connectionKeys.includes(other.key)}
@@ -175,10 +180,10 @@ const EditRow = ({ departments, dispatch, interests, locations, user, users }) =
   return (
     <tr className="checked">
       <td>
-        <input type="checkbox" checked onChange={onUserUncheck} />
+        <input type="checkbox" checked aria-label="Edit" onChange={onUserUncheck} />
       </td>
       <td>
-        <input type="text" value={user.name} onChange={onNameChange} />
+        <input type="text" aria-label="Name" value={user.name} onChange={onNameChange} />
       </td>
       <td>
         <ul>
@@ -238,7 +243,7 @@ const SummaryRow = ({ dispatch, locations, user }) => {
   return (
     <tr>
       <td>
-        <input type="checkbox" checked={false} onChange={onUserCheck} />
+        <input type="checkbox" aria-label="Edit" checked={false} onChange={onUserCheck} />
       </td>
       <td>
         {user.name}

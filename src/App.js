@@ -69,7 +69,7 @@ const Table = ({ currentUser, departments, dispatch, interests, locations, users
     <table>
       <thead>
         <tr>
-          <th />
+          <th aria-label="Active" />
           <th>Name</th>
           <th>Location</th>
           <th>Departments</th>
@@ -149,6 +149,7 @@ const Weight = ({ dispatch, weightKey, weights }) => {
     <label htmlFor={weightKey}>
       {`${weightKey[0].toUpperCase()}${weightKey.slice(1)} `}
       <input
+        aria-label={weightKey}
         name={weightKey}
         id={weightKey}
         type="number"
