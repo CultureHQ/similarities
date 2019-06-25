@@ -30,7 +30,7 @@
     "@babel/preset-env": "^7.4.5",
     "@babel/preset-react": "^7.0.0",
     "@culturehq/eslint-config": "^1.2.1",
-    "@culturehq/scripts": "^1.0.0",
+    "@culturehq/scripts": "^2.0.0",
     "babel-core": "^7.0.0-0",
     "babel-eslint": "^10.0.2",
     "babel-loader": "^8.0.6",
