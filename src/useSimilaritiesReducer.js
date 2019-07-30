@@ -100,6 +100,6 @@ const reducer = (state, action) => {
   }
 };
 
-const useSimilaritiesReducer = () => useReducer(reducer, makeInitialState());
+const useSimilaritiesReducer = () => useReducer(reducer, null, makeInitialState);
 
 export default useSimilaritiesReducer;
