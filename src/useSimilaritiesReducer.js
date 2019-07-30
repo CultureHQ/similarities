@@ -70,6 +70,8 @@ const makeInitialState = () => {
   };
 };
 
+export const clearUser = () => ({ type: "CLEAR_USER" });
+
 export const selectUser = user => ({ type: "SELECT_USER", user });
 
 export const updateUser = user => ({ type: "UPDATE_USER", user });
@@ -78,6 +80,8 @@ export const updateWeight = ({ key, value }) => ({ type: "UPDATE_WEIGHT", key, v
 
 const reducer = (state, action) => {
   switch (action.type) {
+    case "CLEAR_USER":
+      return { ...state, currentUser: null };
     case "SELECT_USER":
       return { ...state, currentUser: action.user };
     case "UPDATE_USER": {

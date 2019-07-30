@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from "react";
 
-import { updateUser } from "./useSimilaritiesReducer";
+import { selectUser, updateUser } from "./useSimilaritiesReducer";
 
 const EditUserLocation = ({ dispatch, location, user }) => {
   const name = `ul-${user.key}-${location.key}`;
@@ -246,7 +246,9 @@ const SummaryRow = ({ dispatch, locations, user }) => {
         <input type="checkbox" aria-label="Edit" checked={false} onChange={onUserCheck} />
       </td>
       <td>
-        {user.name}
+        <button className="inline-btn" type="button" onClick={() => dispatch(selectUser(user))}>
+          {user.name}
+        </button>
       </td>
       <td>
         {locations.find(location => location.key === user.locationKey).name}

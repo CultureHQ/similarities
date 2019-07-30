@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 
-import useSimilaritiesReducer, { updateWeight } from "./useSimilaritiesReducer";
+import useSimilaritiesReducer, { clearUser, updateWeight } from "./useSimilaritiesReducer";
 import UserRow from "./UserRow";
 import UserSearch from "./UserSearch";
 
@@ -142,6 +142,18 @@ const UserChart = ({ departments, interests, locations, user, users, weights }) 
   );
 };
 
+const UserClear = ({ dispatch }) => (
+  <button className="inline-btn" type="button" onClick={() => dispatch(clearUser())}>
+    <svg viewBox="0 0 16 16">
+      <g>
+        <circle cx="8" cy="8" r="6" />
+        <path d="M 5 5 l 6 6 z" />
+        <path d="M 11 5 l -6 6 z" />
+      </g>
+    </svg>
+  </button>
+);
+
 const Weight = ({ dispatch, weightKey, weights }) => {
   const onChange = event => dispatch(updateWeight({ key: weightKey, value: event.target.value }));
 
@@ -182,13 +194,17 @@ const App = () => {
 
   return (
     <>
-      <nav>CultureHQ similarity engine</nav>
+      <nav>
+        CultureHQ similarity engine
+      </nav>
       <main>
         <header>
           <UserSearch dispatch={dispatch} users={users} />
           {currentUser && users.length > 1 && (
             <>
-              <h1>{currentUser.name}</h1>
+              <h1>
+                <UserClear dispatch={dispatch} /> {currentUser.name}
+              </h1>
               <UserChart
                 departments={departments}
                 interests={interests}
