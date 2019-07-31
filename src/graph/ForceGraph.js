@@ -142,9 +142,9 @@ export class ForceGraph extends PureComponent {
     this.updateSimulation();
   }
 
-  componentWillReceiveProps(nextProps) {
+  componentDidReceiveProps() {
     this.lastUpdated = new Date();
-    this.updateSimulation(nextProps);
+    this.updateSimulation(this.props);
   }
 
   componentWillUnmount() {
@@ -153,17 +153,6 @@ export class ForceGraph extends PureComponent {
 
   onSimulationTick() {
     this.frame = requestAnimationFrame(this.updatePositions.bind(this));
-  }
-
-  onZoom(event, scale, ...args) {
-    const { zoomOptions: { onZoom: _onZoom = () => {} } } = this.props;
-    _onZoom(event, scale, ...args);
-    this.setState({ scale });
-  }
-
-  onPan(...args) {
-    const { zoomOptions: { onPan: _onPan = () => {} } } = this.props;
-    _onPan(...args);
   }
 
   getDataFromChildren(props = this.props, force = false) {
@@ -179,11 +168,11 @@ export class ForceGraph extends PureComponent {
   }
 
   bindSimulationTick() {
-    this.simulation.on('tick', this.updateSimulation.bind(this));
+    this.simulation.on("tick", this.updateSimulation.bind(this));
   }
 
   unbindSimulationTick() {
-    this.simulation.on('tick', null);
+    this.simulation.on("tick", null);
     this.frame = this.frame && cancelAnimationFrame(this.frame);
   }
 
