@@ -1,10 +1,26 @@
 import React, { useEffect, useReducer, useState } from "react";
-
-import { createSimulation, updateSimulation, nodeId, linkId } from "./d3-force";
+import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, forceX, forceY } from "d3-force";
 
 const radius = 5;
 const labelOffset = { x: radius / 2, y: -radius / 4 };
-const defaultSimulationProps = { animate: true, strength: {} };
+
+const nodeId = node => node.id;
+const linkId = link => `${link.source.id || link.source}=>${link.target.id || link.target}`;
+
+const createSimulation = ({ height, links, nodes, width }) => (
+  forceSimulation()
+    .nodes(nodes.map(({ id, radius, fx, fy, ...rest }) => ({
+      id, radius, fx, fy
+    })))
+    .force("center", forceCenter().x(width / 2).y(height / 2))
+    .force("charge", forceManyBody())
+    .force("collide", forceCollide().radius(3))
+    .force("link", forceLink().id(nodeId).links(links.map(({ source, target, value, ...rest }) => ({
+      source, target, value
+    }))))
+    .force("x", forceX())
+    .force("y", forceY())
+);
 
 const ForceGraphLink = ({ link, position }) => (
   <line opacity={0.6} stroke="#999" strokeWidth={Math.sqrt(link.value)} {...position} />
@@ -24,13 +40,6 @@ const ForceGraphLabel = ({ node, position }) => (
     {node.label}
   </text>
 );
-
-const makeInitialState = ({ height, links, nodes, width }) => ({
-  frame: null,
-  linkPositions: {},
-  nodePositions: {},
-  simulation: createSimulation({ ...defaultSimulationProps, data: { links, nodes }, height, width })
-});
 
 const makeLinkPosition = link => ({
   x1: link.source.x,
@@ -57,14 +66,10 @@ const useSimulationPositions = ({ height, links, nodes, width }) => {
 
   useEffect(
     () => {
-      let simulation = createSimulation({ ...defaultSimulationProps, data: { links, nodes }, height, width });
+      let simulation = createSimulation({ height, links, nodes, width });
       let frame;
 
       simulation.on("tick", () => {
-        simulation = updateSimulation(simulation, {
-          ...defaultSimulationProps, data: { links, nodes }, height, width
-        });
-
         frame = window.requestAnimationFrame(() => {
           setPositions({
             links: makeLinkPositions(simulation),
