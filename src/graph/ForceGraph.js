@@ -138,7 +138,13 @@ export class ForceGraph extends PureComponent {
 
     const nodeElements = [];
     const labelElements = [];
-    const linkElements = [];
+
+    const { links } = this.props;
+    const linkElements = links.map(link => {
+      const linkPosition = linkPositions[forceUtils.linkId(link)];
+
+      return <ForceGraphLink key={link.id} link={link} {...linkPosition} />;
+    });
 
     Children.forEach(children, (child, idx) => {
       if (child.type === ForceGraphNode) {
@@ -163,12 +169,6 @@ export class ForceGraph extends PureComponent {
             </text>
           );
         }
-      } else if (child.type === ForceGraphLink) {
-        const { link } = child.props;
-        const { strokeWidth } = link;
-        const linkPosition = linkPositions[forceUtils.linkId(link)];
-
-        linkElements.push(cloneElement(child, { ...linkPosition, strokeWidth }));
       }
     });
 
