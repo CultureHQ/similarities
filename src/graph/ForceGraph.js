@@ -1,6 +1,5 @@
 import React, { PureComponent, Children, cloneElement } from "react";
 
-import ZoomableSVGGroup from "./ZoomableSVGGroup";
 import * as forceUtils from "./d3-force";
 
 const DEFAULT_SIMULATION_PROPS = {
@@ -300,19 +299,12 @@ export class ForceGraph extends PureComponent {
     return (
       <svg className={`rv-force__svg ${className}`} width={width} height={height}>
         <g className="rv-force__static-elements">{staticChildren}</g>
-        <ZoomableSVGGroup
-          disabled={!zoom}
-          height={maxPanHeight}
-          width={maxPanWidth}
-          {...zoomOptions}
-          onZoom={(...args) => this.onZoom(...args)}
-          onPan={(...args) => this.onPan(...args)}
-        >
+        <g>
           <g className="rv-force__zoomable-elements">{zoomableChildren}</g>
           <g className="rv-force__links">{linkElements}</g>
           <g className="rv-force__nodes">{nodeElements}</g>
           <g className="rv-force__labels">{labelElements}</g>
-        </ZoomableSVGGroup>
+        </g>
       </svg>
     );
   }
