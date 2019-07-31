@@ -152,7 +152,6 @@ export class ForceGraph extends PureComponent {
     const nodeElements = [];
     const labelElements = [];
     const linkElements = [];
-    const staticChildren = [];
 
     Children.forEach(children, (child, idx) => {
       if (child.type === ForceGraphNode) {
@@ -183,14 +182,11 @@ export class ForceGraph extends PureComponent {
         const linkPosition = linkPositions[forceUtils.linkId(link)];
 
         linkElements.push(cloneElement(child, { ...linkPosition, strokeWidth }));
-      } else {
-        staticChildren.push(cloneElement(child, { key: child.key || `static-${idx}` }));
       }
     });
 
     return (
       <svg className={className} width={width} height={height}>
-        <g>{staticChildren}</g>
         <g>
           <g>{linkElements}</g>
           <g>{nodeElements}</g>
