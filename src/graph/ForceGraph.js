@@ -136,36 +136,33 @@ export class ForceGraph extends PureComponent {
 
     const { height = DEFAULT_SIMULATION_PROPS.height, width = DEFAULT_SIMULATION_PROPS.width } = simulationOptions;
 
-    const nodeElements = [];
     const labelElements = [];
 
-    const { links } = this.props;
+    const { links, nodes } = this.props;
+
     const linkElements = links.map(link => {
       const linkPosition = linkPositions[forceUtils.linkId(link)];
 
       return <ForceGraphLink key={link.id} link={link} {...linkPosition} />;
     });
 
-    Children.forEach(children, (child, idx) => {
-      if (child.type === ForceGraphNode) {
-        const { node } = child.props;
-        const nodePosition = nodePositions[forceUtils.nodeId(node)];
+    const nodeElements = nodes.map(node => {
+      const nodePosition = nodePositions[forceUtils.nodeId(node)];
 
-        nodeElements.push(cloneElement(child, { ...nodePosition }));
-
-        if (nodePosition) {
-          labelElements.push(
-            <text
-              className="rv-force__label"
-              key={`${forceUtils.nodeId(node)}-label`}
-              x={nodePosition.cx + labelOffset.x(node)}
-              y={nodePosition.cy + labelOffset.y(node)}
-            >
-              {node[labelAttr]}
-            </text>
-          );
-        }
+      if (nodePosition) {
+        labelElements.push(
+          <text
+            className="rv-force__label"
+            key={`${forceUtils.nodeId(node)}-label`}
+            x={nodePosition.cx + labelOffset.x(node)}
+            y={nodePosition.cy + labelOffset.y(node)}
+          >
+            {node[labelAttr]}
+          </text>
+        );
       }
+
+      return <ForceGraphNode key={node.id} node={node} {...nodePosition} />;
     });
 
     return (
