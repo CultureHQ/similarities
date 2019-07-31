@@ -1,7 +1,5 @@
 import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, forceX, forceY } from "d3-force";
 
-const ALPHA_FACTORS = ["alpha", "alphaDecay", "alphaMin", "alphaTarget", "velocityDecay"];
-
 function setsEqual(setA, setB) {
   if (setA.size !== setB.size) {
     return false;
@@ -31,16 +29,6 @@ export function asStrengthFn(target) {
     default:
       return () => target;
   }
-}
-
-function applyAlphaFactors(simulation, options) {
-  ALPHA_FACTORS.forEach((alphaFactorName) => {
-    if ({}.hasOwnProperty.call(options, alphaFactorName)) {
-      simulation[alphaFactorName](options[alphaFactorName]);
-    }
-  });
-
-  return simulation;
 }
 
 function applyCenterForce(simulation, { height, width }) {
@@ -172,7 +160,6 @@ export function createSimulation(options) {
 }
 
 export function updateSimulation(simulation, options) {
-  applyAlphaFactors(simulation, options);
   applyCenterForce(simulation, options);
   applyManyBodyChargeForce(simulation, options);
   applyCollisionForce(simulation, options);

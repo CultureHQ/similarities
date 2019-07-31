@@ -1,10 +1,10 @@
-import React, { PureComponent, Children, cloneElement, useEffect, useReducer } from "react";
+import React, { useEffect, useReducer, useState } from "react";
 
 import { createSimulation, updateSimulation, nodeId, linkId } from "./d3-force";
 
 const radius = 5;
 const labelOffset = { x: radius / 2, y: -radius / 4 };
-const defaultSimulationProps = { animate: false, strength: {} };
+const defaultSimulationProps = { animate: true, strength: {} };
 
 const ForceGraphLink = ({ link, position }) => (
   <line opacity={0.6} stroke="#999" strokeWidth={Math.sqrt(link.value)} {...position} />
@@ -52,47 +52,45 @@ const makeNodePositions = simulation => simulation.nodes().reduce(
   (accum, node) => ({ ...accum, [nodeId(node)]: makeNodePosition(node) }), {}
 );
 
-const reducer = (state, action) => {
-  switch (action.type) {
-    case "frame":
-      return {
-        ...state,
-        linkPositions: makeLinkPositions(state.simulation),
-        nodePositions: makeNodePositions(state.simulation)
-      };
-    case "tick": {
-      const { height, links, nodes, width } = action;
-      const simulation = updateSimulation(state.simulation, {
-        ...defaultSimulationProps, data: { links, nodes }, height, width
+const useSimulationPositions = ({ height, links, nodes, width }) => {
+  const [positions, setPositions] = useState({ links: {}, nodes: {} });
+
+  useEffect(
+    () => {
+      let simulation = createSimulation({ ...defaultSimulationProps, data: { links, nodes }, height, width });
+      let frame;
+
+      simulation.on("tick", () => {
+        simulation = updateSimulation(simulation, {
+          ...defaultSimulationProps, data: { links, nodes }, height, width
+        });
+
+        frame = window.requestAnimationFrame(() => {
+          setPositions({
+            links: makeLinkPositions(simulation),
+            nodes: makeNodePositions(simulation)
+          });
+        });
       });
 
-      return { ...state, simulation };
-    }
-    default:
-      throw new Error();
-  }
+      return () => {
+        simulation.on("tick", null);
+
+        if (frame) {
+          window.cancelAnimationFrame(frame);
+        }
+      };
+    },
+    [height, links, nodes, width]
+  );
+
+  return positions;
 };
 
 const ForceGraph = ({ height = 400, links, nodes, width = 400 }) => {
-  const [state, dispatch] = useReducer(reducer, { height, links, nodes, width }, makeInitialState);
+  const positions = useSimulationPositions({ height, links, nodes, width });
 
-  useEffect(
-    () => {
-      state.simulation.on("tick", () => dispatch({ type: "tick", height, links, nodes, width }));
-      return () => state.simulation.on("tick", null);
-    },
-    [dispatch, height, links, nodes, width]
-  );
-
-  useEffect(
-    () => {
-      const frame = window.requestAnimationFrame(() => dispatch({ type: "frame" }));
-      return () => window.cancelAnimationFrame(frame);
-    },
-    [dispatch, state.simulation]
-  );
-
-  if (Object.keys(state.nodePositions).length === 0) {
+  if (Object.keys(positions.nodes).length === 0) {
     return <svg height={height} width={width} />;
   }
 
@@ -100,17 +98,17 @@ const ForceGraph = ({ height = 400, links, nodes, width = 400 }) => {
     <svg height={height} width={width}>
       <g>
         {links.map(link => (
-          <ForceGraphLink key={link.id} link={link} position={state.linkPositions[linkId(link)]} />
+          <ForceGraphLink key={linkId(link)} link={link} position={positions.links[linkId(link)]} />
         ))}
       </g>
       <g>
         {nodes.map(node => (
-          <ForceGraphNode key={node.id} node={node} position={state.nodePositions[nodeId(node)]} />
+          <ForceGraphNode key={nodeId(node)} node={node} position={positions.nodes[nodeId(node)]} />
         ))}
       </g>
       <g>
         {nodes.map(node => (
-          <ForceGraphLabel key={node.id} node={node} position={state.nodePositions[nodeId(node)]} />
+          <ForceGraphLabel key={nodeId(node)} node={node} position={positions.nodes[nodeId(node)]} />
         ))}
       </g>
     </svg>
