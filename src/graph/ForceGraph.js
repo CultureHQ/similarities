@@ -1,146 +1,120 @@
-import React, { PureComponent, Children, cloneElement } from "react";
+import React, { PureComponent, Children, cloneElement, useEffect, useReducer } from "react";
 
-import * as forceUtils from "./d3-force";
+import { createSimulation, updateSimulation, nodeId, linkId } from "./d3-force";
 
 const radius = 5;
 const labelOffset = { x: radius / 2, y: -radius / 4 };
+const defaultSimulationProps = { animate: false, strength: {} };
 
-const DEFAULT_SIMULATION_PROPS = {
-  animate: false,
-  width: 400,
-  height: 400,
-  strength: {},
-};
-
-const ForceGraphLink = ({ link, ...props }) => (
-  <line opacity={0.6} stroke="#999" strokeWidth={Math.sqrt(link.value)} {...props} />
+const ForceGraphLink = ({ link, position }) => (
+  <line opacity={0.6} stroke="#999" strokeWidth={Math.sqrt(link.value)} {...position} />
 );
 
-const ForceGraphNode = ({ node, ...props }) => (
-  <circle fill="#333" r={5} stroke="#fff" strokeWidth={1.5} {...props} />
+const ForceGraphNode = ({ node, position }) => (
+  <circle fill="#333" r={5} stroke="#fff" strokeWidth={1.5} {...position} />
 );
 
-const ForceGraphLabel = ({ node, cx, cy, ...props }) => (
+const ForceGraphLabel = ({ node, position }) => (
   <text
     className="rv-force__label"
-    key={`${forceUtils.nodeId(node)}-label`}
-    x={cx + labelOffset.x}
-    y={cy + labelOffset.y}
+    key={`${nodeId(node)}-label`}
+    x={position.cx + labelOffset.x}
+    y={position.cy + labelOffset.y}
   >
     {node.label}
   </text>
 );
 
-class ForceGraph extends PureComponent {
-  constructor(props) {
-    super(props);
+const makeInitialState = ({ height, links, nodes, width }) => ({
+  frame: null,
+  linkPositions: {},
+  nodePositions: {},
+  simulation: createSimulation({ ...defaultSimulationProps, data: { links, nodes }, height, width })
+});
 
-    const { width, height } = props;
-    const data = this.getData();
+const makeLinkPosition = link => ({
+  x1: link.source.x,
+  y1: link.source.y,
+  x2: link.target.x,
+  y2: link.target.y
+});
 
-    this.state = { linkPositions: {}, nodePositions: {} };
+const makeLinkPositions = simulation => simulation.force("link").links().reduce(
+  (accum, link) => ({ ...accum, [linkId(link)]: makeLinkPosition(link) }), {}
+);
 
-    this.simulation = forceUtils.createSimulation({ ...DEFAULT_SIMULATION_PROPS, width, height, data });
-    this.simulation.on("tick", this.updateSimulation.bind(this));
-  }
+const makeNodePosition = node => ({
+  cx: node.fx || node.x,
+  cy: node.fy || node.y
+});
 
-  componentDidMount() {
-    this.updateSimulation();
-  }
+const makeNodePositions = simulation => simulation.nodes().reduce(
+  (accum, node) => ({ ...accum, [nodeId(node)]: makeNodePosition(node) }), {}
+);
 
-  componentDidUpdate(prevProps) {
-    const { links, nodes } = this.props;
-
-    if (links !== prevProps.links || nodes !== prevProps.nodes) {
-      this.lastUpdated = new Date();
-      this.updateSimulation();
-    }
-  }
-
-  componentWillUnmount() {
-    this.simulation.on("tick", null);
-    this.frame = this.frame && window.cancelAnimationFrame(this.frame);
-  }
-
-  getData(force = false) {
-    if (!force && (this.cachedData && new Date() > this.lastUpdated)) {
-      return this.cachedData;
-    }
-
-    const { nodes, links } = this.props;
-    const data = { nodes, links };
-
-    Object.assign(this, { cachedData: data, lastUpdated: new Date() });
-
-    return data;
-  }
-
-  updateSimulation() {
-    const { width, height } = this.props;
-
-    this.simulation = forceUtils.updateSimulation(this.simulation, {
-      ...DEFAULT_SIMULATION_PROPS, width, height, data: this.getData(true),
-    });
-
-    this.frame = window.requestAnimationFrame(() => {
-      this.setState({
-        linkPositions: this.simulation.force("link").links().reduce(
-          (accum, link) => ({
-            ...accum,
-            [forceUtils.linkId(link)]: {
-              x1: link.source.x,
-              y1: link.source.y,
-              x2: link.target.x,
-              y2: link.target.y,
-            },
-          }),
-          {}
-        ),
-        nodePositions: this.simulation.nodes().reduce(
-          (accum, node) => ({
-            ...accum,
-            [forceUtils.nodeId(node)]: {
-              cx: node.fx || node.x,
-              cy: node.fy || node.y
-            }
-          }),
-          {}
-        )
+const reducer = (state, action) => {
+  switch (action.type) {
+    case "frame":
+      return {
+        ...state,
+        linkPositions: makeLinkPositions(state.simulation),
+        nodePositions: makeNodePositions(state.simulation)
+      };
+    case "tick": {
+      const { height, links, nodes, width } = action;
+      const simulation = updateSimulation(state.simulation, {
+        ...defaultSimulationProps, data: { links, nodes }, height, width
       });
-    });
+
+      return { ...state, simulation };
+    }
+    default:
+      throw new Error();
+  }
+};
+
+const ForceGraph = ({ height = 400, links, nodes, width = 400 }) => {
+  const [state, dispatch] = useReducer(reducer, { height, links, nodes, width }, makeInitialState);
+
+  useEffect(
+    () => {
+      state.simulation.on("tick", () => dispatch({ type: "tick", height, links, nodes, width }));
+      return () => state.simulation.on("tick", null);
+    },
+    [dispatch, height, links, nodes, width]
+  );
+
+  useEffect(
+    () => {
+      const frame = window.requestAnimationFrame(() => dispatch({ type: "frame" }));
+      return () => window.cancelAnimationFrame(frame);
+    },
+    [dispatch, state.simulation]
+  );
+
+  if (Object.keys(state.nodePositions).length === 0) {
+    return <svg height={height} width={width} />;
   }
 
-  render() {
-    const { height, links, nodes, width } = this.props;
-    const { linkPositions, nodePositions } = this.state;
-
-    const labelElements = [];
-    const linkElements = links.map(link => {
-      const linkPosition = linkPositions[forceUtils.linkId(link)];
-
-      return <ForceGraphLink key={link.id} link={link} {...linkPosition} />;
-    });
-
-    const nodeElements = nodes.map(node => {
-      const nodePosition = nodePositions[forceUtils.nodeId(node)];
-
-      if (nodePosition) {
-        labelElements.push(<ForceGraphLabel key={node.id} node={node} {...nodePosition} />);
-      }
-
-      return <ForceGraphNode key={node.id} node={node} {...nodePosition} />;
-    });
-
-    return (
-      <svg height={height} width={width}>
-        <g>
-          <g>{linkElements}</g>
-          <g>{nodeElements}</g>
-          <g>{labelElements}</g>
-        </g>
-      </svg>
-    );
-  }
-}
+  return (
+    <svg height={height} width={width}>
+      <g>
+        {links.map(link => (
+          <ForceGraphLink key={link.id} link={link} position={state.linkPositions[linkId(link)]} />
+        ))}
+      </g>
+      <g>
+        {nodes.map(node => (
+          <ForceGraphNode key={node.id} node={node} position={state.nodePositions[nodeId(node)]} />
+        ))}
+      </g>
+      <g>
+        {nodes.map(node => (
+          <ForceGraphLabel key={node.id} node={node} position={state.nodePositions[nodeId(node)]} />
+        ))}
+      </g>
+    </svg>
+  );
+};
 
 export default ForceGraph;
