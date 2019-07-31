@@ -162,7 +162,7 @@ input[type='number']:hover {
   background-color: #eaeaea;
 }
 
-svg {
+.user-chart {
   height: 350px;
   width: 350px;
 }

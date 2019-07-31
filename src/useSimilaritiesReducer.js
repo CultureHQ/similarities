@@ -6,7 +6,7 @@ import seedLocations from "./seeds/locations.json";
 import seedUsers from "./seeds/users.json";
 
 const makeConnectionMaker = users => {
-  const getKey = () => Math.floor(Math.random() * users.length);
+  const getKey = () => Math.floor(Math.random() * users.length).toString();
 
   return () => {
     let left = getKey();
@@ -40,7 +40,7 @@ const makeInitialState = () => {
   const locations = seedLocations.map((name, key) => ({ key, name }));
 
   const users = seedUsers.map((name, key) => ({
-    key,
+    key: key.toString(),
     connectionKeys: [],
     departmentKeys: departmentKeys.filter(() => Math.random() < 0.3),
     interestKeys: interestKeys.filter(() => Math.random() < 0.1),

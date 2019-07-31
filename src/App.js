@@ -1,59 +1,16 @@
 import React from "react";
 import ReactDOM from "react-dom";
 
+import makeCompare from "./makeCompare";
 import useSimilaritiesReducer, { clearUser, updateWeight } from "./useSimilaritiesReducer";
+import UserGraph from "./UserGraph";
 import UserRow from "./UserRow";
 import UserSearch from "./UserSearch";
 
-const makeCompare = (departments, interests, locations, user, users, weights) => {
-  const interestsLength = (
-    Object.keys(interests).reduce((accum, key) => accum + interests[key].length, 0)
-  );
-
-  const maximum = (
-    weights.connected * users.length
-    + weights.connections * users.length * users.length
-    + weights.departments * departments.length * departments.length
-    + weights.interests * interestsLength
-    + weights.locations * locations.length
-  );
-
-  return other => {
-    const scores = {
-      connected: (
-        weights.connected
-        * (user.connectionKeys.includes(other.key) ? 1 : 0)
-        * users.length
-      ),
-      connection: (
-        weights.connections
-        * user.connectionKeys.filter(key => other.connectionKeys.includes(key)).length
-        * users.length
-      ),
-      department: (
-        weights.departments
-        * user.departmentKeys.filter(key => other.departmentKeys.includes(key)).length
-        * departments.length
-      ),
-      interest: (
-        weights.interests
-        * user.interestKeys.filter(key => other.interestKeys.includes(key)).length
-      ),
-      location: (
-        weights.locations
-        * (user.locationKey === other.locationKey ? 1 : 0)
-        * locations.length
-      )
-    };
-
-    return Object.keys(scores).reduce((accum, key) => accum - scores[key], maximum) / maximum;
-  };
-};
-
 const makeSort = (departments, interests, locations, user, users, weights) => {
   if (user) {
-    const compare = makeCompare(departments, interests, locations, user, users, weights);
-    const scores = users.reduce((accum, other) => ({ ...accum, [other.key]: compare(other) }), {});
+    const compare = makeCompare(departments, interests, locations, users, weights);
+    const scores = users.reduce((accum, other) => ({ ...accum, [other.key]: compare(user, other) }), {});
 
     return (left, right) => scores[left.key] - scores[right.key];
   }
@@ -103,9 +60,9 @@ const UserChart = ({ departments, interests, locations, user, users, weights }) 
   const interval = 1 / (users.length - 1);
   let cursor = -0.25;
 
-  const compare = makeCompare(departments, interests, locations, user, users, weights);
+  const compare = makeCompare(departments, interests, locations, users, weights);
   const slices = users.filter(({ key }) => key !== user.key).map(other => {
-    const scale = compare(other);
+    const scale = compare(user, other);
     const stroke = `hsl(${120 * (1 - scale)}, 100%, 45%)`;
 
     const [x, y] = getCoords(cursor + (interval / 2));
@@ -128,7 +85,7 @@ const UserChart = ({ departments, interests, locations, user, users, weights }) 
   });
 
   return (
-    <svg viewBox="-1 -1 2 2">
+    <svg className="user-chart" viewBox="-1 -1 2 2">
       {slices.map(slice => (
         <g key={slice.key}>
           <line {...slice.line} />
@@ -200,21 +157,25 @@ const App = () => {
       <main>
         <header>
           <UserSearch dispatch={dispatch} users={users} />
-          {currentUser && users.length > 1 && (
-            <>
-              <h1>
-                <UserClear dispatch={dispatch} /> {currentUser.name}
-              </h1>
-              <UserChart
-                departments={departments}
-                interests={interests}
-                locations={locations}
-                user={currentUser}
-                users={users}
-                weights={weights}
-              />
-            </>
-          )}
+          {
+            currentUser && users.length > 1
+            ? (
+              <>
+                <h1>
+                  <UserClear dispatch={dispatch} /> {currentUser.name}
+                </h1>
+                <UserChart
+                  departments={departments}
+                  interests={interests}
+                  locations={locations}
+                  user={currentUser}
+                  users={users}
+                  weights={weights}
+                />
+              </>
+            )
+            : <UserGraph users={users} />
+          }
         </header>
         <section className="weights">
           {Object.keys(weights).map(weightKey => (
