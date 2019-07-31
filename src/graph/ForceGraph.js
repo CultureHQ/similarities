@@ -41,7 +41,7 @@ export const ForceGraphLink = ({ className = "", link, opacity = 0.6, stroke = "
   />
 );
 
-export const ForceGraphNode = ({ className = "", fill = "#333", labelClass, labelStyle, node, opacity = 1, r, showLabel, stroke = "#fff", strokeWidth = 1.5, ...props }) => (
+export const ForceGraphNode = ({ className = "", fill = "#333", node, opacity = 1, r, stroke = "#fff", strokeWidth = 1.5, ...props }) => (
   <circle
     className={`rv-force__node ${className}`}
     fill={fill}
@@ -148,22 +148,18 @@ export class ForceGraph extends PureComponent {
 
     Children.forEach(children, (child, idx) => {
       if (child.type === ForceGraphNode) {
-        const { node, showLabel, labelClass, labelStyle = {}, strokeWidth } = child.props;
+        const { node } = child.props;
         const nodePosition = nodePositions[forceUtils.nodeId(node)];
 
-        nodeElements.push(cloneElement(child, { ...nodePosition, strokeWidth }));
+        nodeElements.push(cloneElement(child, { ...nodePosition }));
 
         if (nodePosition) {
-          const { fontSize, ...spreadableLabelStyle } = labelStyle;
-
           labelElements.push(
             <text
-              className={`rv-force__label ${labelClass}`}
+              className="rv-force__label"
               key={`${forceUtils.nodeId(node)}-label`}
               x={nodePosition.cx + labelOffset.x(node)}
               y={nodePosition.cy + labelOffset.y(node)}
-              fontSize={fontSize}
-              style={spreadableLabelStyle}
             >
               {node[labelAttr]}
             </text>
