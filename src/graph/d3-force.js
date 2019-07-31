@@ -96,11 +96,7 @@ function applyCollisionForce(simulation, { radiusMargin = 3, strength = {} }) {
   }
 }
 
-function applyLinkForce(simulation, {
-  data: { nodes, links },
-  linkAttrs = [],
-  nodeAttrs = [],
-}) {
+function applyLinkForce(simulation, { data: { nodes, links }, linkAttrs = [], nodeAttrs = [], }) {
   // setup the link force if it isn"t already set up
   if (!simulation.force("link")) {
     simulation.force("link", forceLink().id(nodeId));
@@ -111,20 +107,18 @@ function applyLinkForce(simulation, {
   // only update if there are changes.
   const prevNodesSet = new Set(simulation.nodes().map(nodeId));
   const newNodesSet = new Set(nodes.map(nodeId));
+
   if (!setsEqual(prevNodesSet, newNodesSet)) {
     simulation.shouldRun = true;
-    simulation.nodes(
-      pick(nodes, "id", "radius", "fx", "fy", ...nodeAttrs)
-    );
+    simulation.nodes(pick(nodes, "id", "radius", "fx", "fy", ...nodeAttrs));
   }
 
   const prevLinksSet = new Set(simulation.force("link").links().map(linkId));
   const newLinksSet = new Set(links.map(linkId));
+
   if (!setsEqual(prevLinksSet, newLinksSet)) {
     simulation.shouldRun = true;
-    simulation.force("link").links(
-      pick(links, "source", "target", "value", ...linkAttrs)
-    );
+    simulation.force("link").links(pick(links, "source", "target", "value", ...linkAttrs));
   }
 }
 
@@ -161,7 +155,6 @@ export function linkId(link) {
 export function runSimulation(simulation) {
   simulation.restart();
 
-  // run the simulation to fruition and stop it.
   while (simulation.alpha() > simulation.alphaMin()) {
     simulation.tick();
   }
@@ -172,9 +165,9 @@ export function runSimulation(simulation) {
 }
 
 export function createSimulation(options) {
-  // update center force
   const simulation = forceSimulation();
   simulation.strength = {};
+
   return updateSimulation(simulation, options);
 }
 

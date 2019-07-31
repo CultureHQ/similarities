@@ -4,28 +4,32 @@ import * as forceUtils from "./d3-force";
 
 const DEFAULT_SIMULATION_PROPS = {
   animate: false,
-  width: 900,
-  height: 600,
+  width: 400,
+  height: 400,
   strength: {},
 };
 
-const requestAnimationFrame = (fn, ...rest) => {
-  if (Object.prototype.hasOwnProperty.call(window, "requestAnimationFrame")) {
-    window.requestAnimationFrame(fn, ...rest);
-  } else {
-    fn(...rest);
-  }
-};
+const getNodePositions = simulation => simulation.nodes().reduce(
+  (obj, node) => Object.assign(obj, {
+    [forceUtils.nodeId(node)]: {
+      cx: node.fx || node.x,
+      cy: node.fy || node.y,
+    },
+  }),
+  {}
+);
 
-const cancelAnimationFrame = (...args) => {
-  if (Object.prototype.hasOwnProperty.call(window, "cancelAnimationFrame")) {
-    window.cancelAnimationFrame(...args);
-  }
-};
-
-const isNode = child => child.props && child.props.node;
-
-const isLink = child => child.props && child.props.link;
+const getLinkPositions = simulation => simulation.force('link').links().reduce(
+  (obj, link) => Object.assign(obj, {
+    [forceUtils.linkId(link)]: {
+      x1: link.source.x,
+      y1: link.source.y,
+      x2: link.target.x,
+      y2: link.target.y,
+    },
+  }),
+  {}
+);
 
 export const ForceGraphLink = ({ className = "", link, opacity = 0.6, stroke = "#999", strokeWidth, ...props }) => (
   <line
@@ -52,27 +56,22 @@ export const ForceGraphNode = ({ className = "", fill = "#333", labelClass, labe
 export class ForceGraph extends PureComponent {
   static get defaultProps() {
     return {
-      createSimulation: forceUtils.createSimulation,
-      updateSimulation: forceUtils.updateSimulation,
-      zoom: false,
-      labelAttr: 'id',
+      labelAttr: "label",
       simulationOptions: DEFAULT_SIMULATION_PROPS,
       labelOffset: {
         x: ({ radius = 5 }) => radius / 2,
         y: ({ radius = 5 }) => -radius / 4,
-      },
-      showLabels: false,
-      zoomOptions: {},
+      }
     };
   }
 
   static getDataFromChildren(children) {
     const data = { nodes: [], links: [] };
 
-    Children.forEach(children, (child) => {
-      if (isNode(child)) {
+    Children.forEach(children, child => {
+      if (child.type === ForceGraphNode) {
         data.nodes.push(child.props.node);
-      } else if (isLink(child)) {
+      } else if (child.type === ForceGraphLink) {
         data.links.push(child.props.link);
       }
     });
@@ -80,79 +79,38 @@ export class ForceGraph extends PureComponent {
     return data;
   }
 
-  /**
-   * return a map of nodeIds to node positions.
-   * @param {object} simulation - d3-force simulation
-   * @return {object} map of nodeIds to positions
-   */
-  static getNodePositions(simulation) {
-    return simulation.nodes().reduce(
-      (obj, node) => Object.assign(obj, {
-        [forceUtils.nodeId(node)]: {
-          cx: node.fx || node.x,
-          cy: node.fy || node.y,
-        },
-      }),
-      {}
-    );
-  }
-
-  /**
-   * return a map of nodeIds to node positions.
-   * @param {object} simulation - d3-force simulation
-   * @return {object} map of linkIds to positions
-   */
-  static getLinkPositions(simulation) {
-    return simulation.force('link').links().reduce(
-      (obj, link) => Object.assign(obj, {
-        [forceUtils.linkId(link)]: {
-          x1: link.source.x,
-          y1: link.source.y,
-          x2: link.target.x,
-          y2: link.target.y,
-        },
-      }),
-      {}
-    );
-  }
-
   constructor(props) {
     super(props);
 
-    const { createSimulation, simulationOptions } = props;
-
+    const { simulationOptions } = props;
     const data = this.getDataFromChildren();
 
-    this.simulation = createSimulation({
+    this.state = { linkPositions: {}, nodePositions: {} };
+    this.simulation = forceUtils.createSimulation({
       ...DEFAULT_SIMULATION_PROPS,
       ...simulationOptions,
-      data,
+      data
     });
 
-    this.state = {
-      linkPositions: {},
-      nodePositions: {},
-      scale: 1,
-    };
-
-    this.bindSimulationTick();
+    this.simulation.on("tick", this.updateSimulation.bind(this));
   }
 
   componentDidMount() {
     this.updateSimulation();
   }
 
-  componentDidReceiveProps() {
-    this.lastUpdated = new Date();
-    this.updateSimulation(this.props);
+  componentDidUpdate(prevProps) {
+    const { children } = this.props;
+
+    if (children !== prevProps.children) {
+      this.lastUpdated = new Date();
+      this.updateSimulation();
+    }
   }
 
   componentWillUnmount() {
-    this.unbindSimulationTick();
-  }
-
-  onSimulationTick() {
-    this.frame = requestAnimationFrame(this.updatePositions.bind(this));
+    this.simulation.on("tick", null);
+    this.frame = this.frame && window.cancelAnimationFrame(this.frame);
   }
 
   getDataFromChildren(props = this.props, force = false) {
@@ -167,132 +125,76 @@ export class ForceGraph extends PureComponent {
     return data;
   }
 
-  bindSimulationTick() {
-    this.simulation.on("tick", this.updateSimulation.bind(this));
-  }
-
-  unbindSimulationTick() {
-    this.simulation.on("tick", null);
-    this.frame = this.frame && cancelAnimationFrame(this.frame);
-  }
-
-  updateSimulation(props = this.props) {
+  updateSimulation() {
     const { simulation } = this;
-    const { updateSimulation, simulationOptions } = props;
+    const { simulationOptions } = this.props;
 
-    this.simulation = updateSimulation(simulation, {
+    this.simulation = forceUtils.updateSimulation(simulation, {
       ...DEFAULT_SIMULATION_PROPS,
       ...simulationOptions,
-      data: this.getDataFromChildren(props, true),
+      data: this.getDataFromChildren(this.props, true),
     });
 
-    this.onSimulationTick();
-  }
-
-  updatePositions() {
-    this.setState({
-      linkPositions: ForceGraph.getLinkPositions(this.simulation),
-      nodePositions: ForceGraph.getNodePositions(this.simulation),
+    this.frame = window.requestAnimationFrame(() => {
+      this.setState({
+        linkPositions: getLinkPositions(this.simulation),
+        nodePositions: getNodePositions(this.simulation),
+      });
     });
-  }
-
-  scale(number) {
-    return typeof number === 'number' ? number / this.state.scale : number;
   }
 
   render() {
-    const {
-      children,
-      className,
-      labelAttr,
-      labelOffset,
-      showLabels,
-      simulationOptions,
-      zoomOptions,
-      zoom,
-    } = this.props;
+    const { children, className, labelAttr, labelOffset, simulationOptions } = this.props;
+    const { linkPositions, nodePositions } = this.state;
 
-    const {
-      linkPositions,
-      nodePositions,
-    } = this.state;
-
-    const {
-      height = DEFAULT_SIMULATION_PROPS.height,
-      width = DEFAULT_SIMULATION_PROPS.width,
-    } = simulationOptions;
+    const { height = DEFAULT_SIMULATION_PROPS.height, width = DEFAULT_SIMULATION_PROPS.width } = simulationOptions;
 
     const nodeElements = [];
     const labelElements = [];
     const linkElements = [];
-    const zoomableChildren = [];
     const staticChildren = [];
 
-    const reduce = (object, callback, initial) => Object.keys(object).reduce((accum, key) => callback(accum, object[key]), initial);
-
-    const maxPanWidth = reduce(nodePositions, (maxWidth, { cx }) => (maxWidth > Math.abs(cx) ? maxWidth : Math.abs(cx)), 0);
-    const maxPanHeight = reduce(nodePositions, (maxHeight, { cy }) => (maxHeight > Math.abs(cy) ? maxHeight : Math.abs(cy)), 0);
-
-    // build up the real children to render by iterating through the provided children
     Children.forEach(children, (child, idx) => {
-      if (isNode(child)) {
-        const {
-          node,
-          showLabel,
-          labelClass,
-          labelStyle = {},
-          strokeWidth,
-        } = child.props;
+      if (child.type === ForceGraphNode) {
+        const { node, showLabel, labelClass, labelStyle = {}, strokeWidth } = child.props;
         const nodePosition = nodePositions[forceUtils.nodeId(node)];
 
-        nodeElements.push(cloneElement(child, {
-          ...nodePosition,
-          scale: this.state.scale,
-          strokeWidth: this.scale(strokeWidth),
-        }));
+        nodeElements.push(cloneElement(child, { ...nodePosition, strokeWidth }));
 
-        if ((showLabels || showLabel) && nodePosition) {
+        if (nodePosition) {
           const { fontSize, ...spreadableLabelStyle } = labelStyle;
+
           labelElements.push(
             <text
               className={`rv-force__label ${labelClass}`}
               key={`${forceUtils.nodeId(node)}-label`}
               x={nodePosition.cx + labelOffset.x(node)}
               y={nodePosition.cy + labelOffset.y(node)}
-              fontSize={this.scale(fontSize)}
+              fontSize={fontSize}
               style={spreadableLabelStyle}
             >
               {node[labelAttr]}
             </text>
           );
         }
-      } else if (isLink(child)) {
+      } else if (child.type === ForceGraphLink) {
         const { link } = child.props;
         const { strokeWidth } = link;
         const linkPosition = linkPositions[forceUtils.linkId(link)];
 
-        linkElements.push(cloneElement(child, {
-          ...linkPosition,
-          strokeWidth: this.scale(strokeWidth),
-        }));
+        linkElements.push(cloneElement(child, { ...linkPosition, strokeWidth }));
       } else {
-        const { props: { zoomable } } = child;
-        if (zoom && zoomable) {
-          zoomableChildren.push(cloneElement(child, { key: child.key || `zoomable-${idx}` }));
-        } else {
-          staticChildren.push(cloneElement(child, { key: child.key || `static-${idx}` }));
-        }
+        staticChildren.push(cloneElement(child, { key: child.key || `static-${idx}` }));
       }
     });
 
     return (
-      <svg className={`rv-force__svg ${className}`} width={width} height={height}>
-        <g className="rv-force__static-elements">{staticChildren}</g>
+      <svg className={className} width={width} height={height}>
+        <g>{staticChildren}</g>
         <g>
-          <g className="rv-force__zoomable-elements">{zoomableChildren}</g>
-          <g className="rv-force__links">{linkElements}</g>
-          <g className="rv-force__nodes">{nodeElements}</g>
-          <g className="rv-force__labels">{labelElements}</g>
+          <g>{linkElements}</g>
+          <g>{nodeElements}</g>
+          <g>{labelElements}</g>
         </g>
       </svg>
     );

@@ -19,8 +19,8 @@ const UserGraph = ({ compare, currentUser, users }) => {
   const links = makeGraphLinks(compare, currentUser, users);
 
   return (
-    <ForceGraph simulationOptions={{ height: 400, width: 400 }}>
-      {users.map(user => <ForceGraphNode key={user.key} node={{ id: user.key }} />)}
+    <ForceGraph>
+      {users.map(user => <ForceGraphNode key={user.key} node={{ id: user.key, label: user.initials }} />)}
       {links.map(link => <ForceGraphLink key={link.key} link={link} />)}
     </ForceGraph>
   );

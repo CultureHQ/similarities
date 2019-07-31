@@ -48,6 +48,7 @@ const makeInitialState = () => {
     interestKeys: interestKeys.filter(() => Math.random() < 0.1),
     locationKey: locations[Math.floor(Math.random() * locations.length)].key,
     name,
+    initials: name.split(" ").map(part => part[0]).join(""),
     checked: false
   }));
 
