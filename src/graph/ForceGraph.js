@@ -65,25 +65,11 @@ export class ForceGraph extends PureComponent {
     };
   }
 
-  static getDataFromChildren(children) {
-    const data = { nodes: [], links: [] };
-
-    Children.forEach(children, child => {
-      if (child.type === ForceGraphNode) {
-        data.nodes.push(child.props.node);
-      } else if (child.type === ForceGraphLink) {
-        data.links.push(child.props.link);
-      }
-    });
-
-    return data;
-  }
-
   constructor(props) {
     super(props);
 
     const { simulationOptions } = props;
-    const data = this.getDataFromChildren();
+    const data = this.getData();
 
     this.state = { linkPositions: {}, nodePositions: {} };
     this.simulation = forceUtils.createSimulation({
@@ -113,12 +99,13 @@ export class ForceGraph extends PureComponent {
     this.frame = this.frame && window.cancelAnimationFrame(this.frame);
   }
 
-  getDataFromChildren(props = this.props, force = false) {
+  getData(force = false) {
     if (!force && (this.cachedData && new Date() > this.lastUpdated)) {
       return this.cachedData;
     }
 
-    const data = ForceGraph.getDataFromChildren(props.children);
+    const { nodes, links } = this.props;
+    const data = { nodes, links };
 
     Object.assign(this, { cachedData: data, lastUpdated: new Date() });
 
@@ -132,7 +119,7 @@ export class ForceGraph extends PureComponent {
     this.simulation = forceUtils.updateSimulation(simulation, {
       ...DEFAULT_SIMULATION_PROPS,
       ...simulationOptions,
-      data: this.getDataFromChildren(this.props, true),
+      data: this.getData(true),
     });
 
     this.frame = window.requestAnimationFrame(() => {

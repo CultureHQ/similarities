@@ -20,7 +20,7 @@ const UserGraph = ({ compare, currentUser, users }) => {
   const links = makeGraphLinks(compare, currentUser, users);
 
   return (
-    <ForceGraph>
+    <ForceGraph nodes={nodes} links={links}>
       {nodes.map(node => <ForceGraphNode key={node.id} node={node} />)}
       {links.map(link => <ForceGraphLink key={link.id} link={link} />)}
     </ForceGraph>
