@@ -12,7 +12,7 @@ const UserGraph = ({ users }) => {
   ));
 
   return (
-    <ForceGraph simulationOptions={{ height: 600, width: 600 }} highlightDependencies>
+    <ForceGraph simulationOptions={{ height: 400, width: 400 }}>
       {users.map(user => <ForceGraphNode key={user.key} node={{ id: user.key }} />)}
       {links.map(link => <ForceGraphLink key={link.key} link={link} />)}
     </ForceGraph>

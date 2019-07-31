@@ -174,7 +174,12 @@ const App = () => {
                 />
               </>
             )
-            : <UserGraph users={users} />
+            : (
+              <>
+                <h1>Similarities</h1>
+                <UserGraph users={users} />
+              </>
+            )
           }
         </header>
         <section className="weights">
