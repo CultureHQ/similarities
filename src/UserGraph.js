@@ -1,5 +1,5 @@
 import React from "react";
-import { ForceGraph, ForceGraphNode, ForceGraphLink } from "react-vis-force";
+import { ForceGraph, ForceGraphNode, ForceGraphLink } from "./graph/ForceGraph";
 
 const makeUserLinks = (compare, user, users) => user.connectionKeys.map(connectionKey => ({
   key: `${user.key}-${connectionKey}`,

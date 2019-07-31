@@ -220,3 +220,11 @@ footer p {
 footer a, footer a:hover {
   color: #f7f7f7;
 }
+
+.rv-force__label {
+  pointer-events: none;
+}
+
+.rv-force__label::selection {
+  background: none;
+}
