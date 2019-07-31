@@ -1,4 +1,4 @@
-const makeCompare = (departments, interests, locations, users, weights) => {
+const makeCompare = ({ departments, interests, locations, users, weights }) => {
   const interestsLength = (
     Object.keys(interests).reduce((accum, key) => accum + interests[key].length, 0)
   );

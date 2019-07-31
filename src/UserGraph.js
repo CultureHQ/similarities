@@ -1,4 +1,4 @@
-import React, { Fragment } from "react";
+import React from "react";
 import { InteractiveForceGraph, ForceGraphNode, ForceGraphLink } from "react-vis-force";
 
 const UserGraph = ({ users }) => {

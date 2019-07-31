@@ -5,6 +5,8 @@ import seedInterests from "./seeds/interests.json";
 import seedLocations from "./seeds/locations.json";
 import seedUsers from "./seeds/users.json";
 
+import makeCompare from "./makeCompare";
+
 const makeConnectionMaker = users => {
   const getKey = () => Math.floor(Math.random() * users.length).toString();
 
@@ -54,7 +56,7 @@ const makeInitialState = () => {
     makeConnection();
   });
 
-  return {
+  const state = {
     currentUser: null,
     departments,
     interests,
@@ -68,6 +70,8 @@ const makeInitialState = () => {
     },
     users
   };
+
+  return { ...state, compare: makeCompare(state) };
 };
 
 export const clearUser = () => ({ type: "CLEAR_USER" });
@@ -86,15 +90,19 @@ const reducer = (state, action) => {
       return { ...state, currentUser: action.user };
     case "UPDATE_USER": {
       const { currentUser } = state;
-
-      return {
+      const nextState = {
         ...state,
         currentUser: currentUser && currentUser.key === action.user.key ? action.user : currentUser,
         users: state.users.map(user => (user.key === action.user.key ? action.user : user))
       };
+
+      return { ...nextState, compare: makeCompare(nextState) };
     }
-    case "UPDATE_WEIGHT":
-      return { ...state, weights: { ...state.weights, [action.key]: action.value } };
+    case "UPDATE_WEIGHT": {
+      const nextState = { ...state, weights: { ...state.weights, [action.key]: action.value } };
+
+      return { ...nextState, compare: makeCompare(nextState) };
+    }
     default:
       return state;
   }

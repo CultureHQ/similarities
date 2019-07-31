@@ -1,16 +1,17 @@
 import React from "react";
 import ReactDOM from "react-dom";
 
-import makeCompare from "./makeCompare";
 import useSimilaritiesReducer, { clearUser, updateWeight } from "./useSimilaritiesReducer";
 import UserGraph from "./UserGraph";
 import UserRow from "./UserRow";
 import UserSearch from "./UserSearch";
 
-const makeSort = (departments, interests, locations, user, users, weights) => {
+const makeSort = (compare, user, users) => {
   if (user) {
-    const compare = makeCompare(departments, interests, locations, users, weights);
-    const scores = users.reduce((accum, other) => ({ ...accum, [other.key]: compare(user, other) }), {});
+    const scores = users.reduce(
+      (accum, other) => ({ ...accum, [other.key]: compare(user, other) }),
+      {}
+    );
 
     return (left, right) => scores[left.key] - scores[right.key];
   }
@@ -18,9 +19,8 @@ const makeSort = (departments, interests, locations, user, users, weights) => {
   return (left, right) => left.name.localeCompare(right.name);
 };
 
-const Table = ({ currentUser, departments, dispatch, interests, locations, users, weights }) => {
-  const sort = makeSort(departments, interests, locations, currentUser, users, weights);
-  const sorted = [...users].sort(sort);
+const Table = ({ compare, currentUser, departments, dispatch, interests, locations, users }) => {
+  const sorted = [...users].sort(makeSort(compare, currentUser, users));
 
   return (
     <table>
@@ -56,11 +56,10 @@ const getCoords = percent => [
   Math.sin(2 * Math.PI * percent)
 ];
 
-const UserChart = ({ departments, interests, locations, user, users, weights }) => {
+const UserChart = ({ compare, user, users }) => {
   const interval = 1 / (users.length - 1);
   let cursor = -0.25;
 
-  const compare = makeCompare(departments, interests, locations, users, weights);
   const slices = users.filter(({ key }) => key !== user.key).map(other => {
     const scale = compare(user, other);
     const stroke = `hsl(${120 * (1 - scale)}, 100%, 45%)`;
@@ -147,7 +146,7 @@ const AppFooter = () => ReactDOM.createPortal(
 
 const App = () => {
   const [state, dispatch] = useSimilaritiesReducer();
-  const { currentUser, departments, interests, locations, users, weights } = state;
+  const { compare, currentUser, departments, interests, locations, users, weights } = state;
 
   return (
     <>
@@ -157,21 +156,13 @@ const App = () => {
       <main>
         <header>
           <UserSearch dispatch={dispatch} users={users} />
-          {
-            currentUser && users.length > 1
+          {currentUser && users.length > 1
             ? (
               <>
                 <h1>
                   <UserClear dispatch={dispatch} /> {currentUser.name}
                 </h1>
-                <UserChart
-                  departments={departments}
-                  interests={interests}
-                  locations={locations}
-                  user={currentUser}
-                  users={users}
-                  weights={weights}
-                />
+                <UserChart compare={compare} user={currentUser} users={users} />
               </>
             )
             : (
@@ -189,6 +180,7 @@ const App = () => {
         </section>
         <section>
           <Table
+            compare={compare}
             currentUser={currentUser}
             departments={departments}
             dispatch={dispatch}
