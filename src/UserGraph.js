@@ -1,5 +1,5 @@
 import React from "react";
-import { ForceGraph, ForceGraphNode, ForceGraphLink } from "./graph/ForceGraph";
+import ForceGraph from "./graph/ForceGraph";
 
 const makeUserLinks = (compare, user, users) => user.connectionKeys.map(connectionKey => ({
   id: `${user.key}-${connectionKey}`,
@@ -19,12 +19,7 @@ const UserGraph = ({ compare, currentUser, users }) => {
   const nodes = users.map(user => ({ id: user.key, label: user.initials }));
   const links = makeGraphLinks(compare, currentUser, users);
 
-  return (
-    <ForceGraph nodes={nodes} links={links}>
-      {nodes.map(node => <ForceGraphNode key={node.id} node={node} />)}
-      {links.map(link => <ForceGraphLink key={link.id} link={link} />)}
-    </ForceGraph>
-  );
+  return <ForceGraph height={400} links={links} nodes={nodes} width={400} />;
 };
 
 export default UserGraph;
