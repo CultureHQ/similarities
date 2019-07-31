@@ -162,11 +162,6 @@ input[type='number']:hover {
   background-color: #eaeaea;
 }
 
-.user-chart {
-  height: 400px;
-  width: 400px;
-}
-
 .inline-btn {
   background: transparent;
   border: 0;
