@@ -17,7 +17,7 @@ const createSimulation = ({ height, links, nodes, width }) => {
     })))
     .force("center", forceCenter(centerX, centerY))
     .force("charge", forceManyBody())
-    .force("collide", forceCollide().radius(3))
+    .force("collide", forceCollide(3))
     .force("link", forceLink().id(nodeId).links(links.map(({ source, target, value, ...rest }) => ({
       source, target, value
     }))))
