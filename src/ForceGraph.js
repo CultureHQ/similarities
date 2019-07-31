@@ -7,20 +7,23 @@ const labelOffset = { x: radius / 2, y: -radius / 4 };
 const nodeId = node => node.id;
 const linkId = link => `${link.source.id || link.source}=>${link.target.id || link.target}`;
 
-const createSimulation = ({ height, links, nodes, width }) => (
-  forceSimulation()
+const createSimulation = ({ height, links, nodes, width }) => {
+  const centerX = width / 2;
+  const centerY = height / 2;
+
+  return forceSimulation()
     .nodes(nodes.map(({ id, radius, fx, fy, ...rest }) => ({
       id, radius, fx, fy
     })))
-    .force("center", forceCenter().x(width / 2).y(height / 2))
+    .force("center", forceCenter(centerX, centerY))
     .force("charge", forceManyBody())
     .force("collide", forceCollide().radius(3))
     .force("link", forceLink().id(nodeId).links(links.map(({ source, target, value, ...rest }) => ({
       source, target, value
     }))))
-    .force("x", forceX())
-    .force("y", forceY())
-);
+    .force("x", forceX(centerX))
+    .force("y", forceY(centerY));
+};
 
 const ForceGraphLink = ({ link, position }) => (
   <line opacity={0.6} stroke="#999" strokeWidth={Math.sqrt(link.value)} {...position} />
