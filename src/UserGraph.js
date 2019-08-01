@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 
 import ForceGraph from "./ForceGraph";
+import UserGraphColoring from "./UserGraphColoring";
 import useColoring from "./useColoring";
 
 const makeUserLinks = (compare, user, users) => user.connectionKeys.map(
@@ -22,25 +23,7 @@ const UserGraph = ({ compare, currentUser, users }) => {
 
   return (
     <>
-      <div style={{ position: "absolute", left: "2em" }}>
-        <ul>
-          <li>
-            <button type="button" onClick={() => onChangeColoring(null)}>
-              None
-            </button>
-          </li>
-          <li>
-            <button type="button" onClick={() => onChangeColoring("location")}>
-              Location
-            </button>
-          </li>
-          <li>
-            <button type="button" onClick={() => onChangeColoring("department")}>
-              Department
-            </button>
-          </li>
-        </ul>
-      </div>
+      <UserGraphColoring onChangeColoring={onChangeColoring} />
       <ForceGraph height={400} links={links} nodes={nodes} width={400} />
     </>
   );
