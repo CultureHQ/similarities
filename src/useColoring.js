@@ -40,10 +40,16 @@ const makeGetColor = (coloring, users) => {
 };
 
 const useColoring = users => {
-  const [getColor, setGetColor] = useState(makeGetColor);
-  const onChangeColoring = coloring => setGetColor(() => makeGetColor(coloring, users));
+  const [state, setState] = useState({
+    coloring: "location",
+    getColor: makeGetColor("location", users)
+  });
 
-  return [getColor, onChangeColoring];
+  const onChangeColoring = coloring => setState({
+    coloring, getColor: makeGetColor(coloring, users)
+  });
+
+  return { ...state, onChangeColoring };
 };
 
 export default useColoring;

@@ -213,14 +213,14 @@ const UserGraphCanvas = ({ height, links, nodes, width }) => {
 };
 
 const UserGraph = ({ compare, currentUser, users }) => {
-  const [getColor, onChangeColoring] = useColoring(users);
+  const { coloring, getColor, onChangeColoring } = useColoring(users);
 
   const nodes = makeNodes(currentUser, users, getColor);
   const links = makeLinks(compare, currentUser, users);
 
   return (
     <>
-      <UserGraphColoring onChangeColoring={onChangeColoring} />
+      <UserGraphColoring coloring={coloring} onChangeColoring={onChangeColoring} />
       <UserGraphCanvas height={400} links={links} nodes={nodes} width={400} />
     </>
   );
