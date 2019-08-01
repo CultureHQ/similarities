@@ -1,15 +1,70 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { forceSimulation, forceCenter, forceCollide, forceLink } from "d3-force";
 
 import UserGraphColoring from "./UserGraphColoring";
 import useColoring from "./useColoring";
+
+const radius = 10;
+
+const makeGetCoords = canvas => {
+  const { left, top, width, height } = canvas.getBoundingClientRect();
+
+  const marginX = left + width / 2;
+  const marginY = top + height / 2;
+
+  return event => [event.clientX - marginX, event.clientY - marginY];
+};
+
+const enableDrag = (canvas, simulation) => {
+  const getCoords = makeGetCoords(canvas);
+  let currentDrag;
+
+  const onMouseDown = event => {
+    const [eventX, eventY] = getCoords(event);
+    currentDrag = simulation.find(eventX, eventY, radius);
+
+    if (currentDrag) {
+      simulation.alphaTarget(0.3).restart();
+      currentDrag.fx = eventX;
+      currentDrag.fy = eventY;
+    }
+  };
+
+  const onMouseMove = event => {
+    if (currentDrag) {
+      const [eventX, eventY] = getCoords(event);
+      currentDrag.fx = eventX;
+      currentDrag.fy = eventY;
+    }
+  };
+
+  const onMouseUp = event => {
+    if (currentDrag) {
+      currentDrag.fx = null;
+      currentDrag.fy = null;
+      currentDrag = null;
+    } else {
+      simulation.alphaTarget(0);
+    }
+  };
+
+  canvas.addEventListener("mousedown", onMouseDown);
+  canvas.addEventListener("mousemove", onMouseMove);
+  canvas.addEventListener("mouseup", onMouseUp);
+
+  return () => {
+    canvas.removeEventListener("mousedown", onMouseDown);
+    canvas.removeEventListener("mousemove", onMouseMove);
+    canvas.removeEventListener("mouseup", onMouseUp);
+  };
+};
 
 const useSimulationPositions = (canvasRef, { height, links, nodes, width }) => useEffect(
   () => {
     const context = canvasRef.current.getContext("2d");
     const simulation = forceSimulation(nodes)
       .force("center", forceCenter())
-      .force("collide", forceCollide(5))
+      .force("collide", forceCollide(radius))
       .force("link", forceLink().distance(150).links(links).strength(link => link.strength));
 
     simulation.on("tick", () => {
@@ -29,8 +84,8 @@ const useSimulationPositions = (canvasRef, { height, links, nodes, width }) => u
 
       nodes.forEach(node => {
         context.beginPath();
-        context.moveTo(node.x + 5, node.y);
-        context.arc(node.x, node.y, 5, 0, 2 * Math.PI);
+        context.moveTo(node.x + radius, node.y);
+        context.arc(node.x, node.y, radius, 0, 2 * Math.PI);
         context.fillStyle = node.color;
         context.fill();
         context.strokeStyle = "#fff";
@@ -40,7 +95,12 @@ const useSimulationPositions = (canvasRef, { height, links, nodes, width }) => u
       context.restore();
     });
 
-    return () => simulation.on("tick", null);
+    const disableDrag = enableDrag(canvasRef.current, simulation);
+
+    return () => {
+      simulation.on("tick", null);
+      disableDrag();
+    }
   },
   [canvasRef, height, links, nodes, width]
 );
