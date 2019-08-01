@@ -221,10 +221,10 @@ footer a, footer a:hover {
   color: #f7f7f7;
 }
 
-.rv-force__label {
+.force-label {
   pointer-events: none;
 }
 
-.rv-force__label::selection {
+.force-label::selection {
   background: none;
 }

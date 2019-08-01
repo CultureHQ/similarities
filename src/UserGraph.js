@@ -20,7 +20,7 @@ const UserGraph = ({ compare, currentUser, users }) => {
   const nodes = users.map(user => ({ id: user.key, label: user.initials }));
   const links = makeGraphLinks(compare, currentUser, users);
 
-  return <ForceGraph height={400} links={links} nodes={nodes} width={800} />;
+  return <ForceGraph height={400} links={links} nodes={nodes} width={400} />;
 };
 
 export default UserGraph;
