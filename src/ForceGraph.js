@@ -28,7 +28,7 @@ const ForceGraphLink = ({ link }) => (
 );
 
 const ForceGraphNode = () => (
-  <circle fill="#333" r={radius} stroke="#fff" strokeWidth={1.5} />
+  <circle fill="#333" r={radius} stroke="#fff" strokeWidth={1} />
 );
 
 const ForceGraphLabel = ({ node }) => (
