@@ -24,7 +24,7 @@ const createSimulation = ({ height, links, nodes, width }) => {
 };
 
 const ForceGraphLink = ({ link }) => (
-  <line opacity={0.6} stroke="#999" strokeWidth={Math.sqrt(link.value)} />
+  <line opacity={0.3} stroke="#999" strokeWidth={Math.sqrt(link.value)} />
 );
 
 const ForceGraphNode = () => (
