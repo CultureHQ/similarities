@@ -1,48 +1,84 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import ReactDOM from "react-dom";
 import { forceSimulation, forceCenter, forceCollide, forceLink } from "d3-force";
 
 import UserGraphColoring from "./UserGraphColoring";
 import useColoring from "./useColoring";
 
 const radius = 10;
+const labels = { left: -40, top: 20 };
 
-const makeGetCoords = canvas => {
-  const { left, top, width, height } = canvas.getBoundingClientRect();
-
-  const marginX = left + width / 2;
-  const marginY = top + height / 2;
+const makeGetCoords = boundingRect => {
+  const marginX = boundingRect.left + boundingRect.width / 2;
+  const marginY = boundingRect.top + boundingRect.height / 2;
 
   return event => [event.clientX - marginX, event.clientY - marginY];
 };
 
-const enableDrag = (canvas, simulation) => {
-  const getCoords = makeGetCoords(canvas);
-  let currentDrag;
+const makeGetCenter = boundingRect => {
+  const marginX = boundingRect.left + boundingRect.width / 2;
+  const marginY = boundingRect.top + boundingRect.height / 2;
+
+  return node => [(node.fx || node.x) + marginX, (node.fy || node.y) + marginY];
+};
+
+const enableDrag = (canvas, simulation, setPopover) => {
+  const boundingRect = canvas.getBoundingClientRect();
+
+  const getCoords = makeGetCoords(boundingRect);
+  const getCenter = makeGetCenter(boundingRect);
+
+  let dragNode;
+  let hoverNode;
+
+  const onHoverNode = node => {
+    if (hoverNode !== node) {
+      hoverNode = node;
+
+      setPopover(current => {
+        if (hoverNode) {
+          const [centerX, centerY] = getCenter(node);
+
+          return {
+            node: hoverNode,
+            left: centerX + labels.left,
+            top: centerY + labels.top,
+            show: true
+          };
+        }
+        return { ...current, show: false };
+      });
+    }
+  };
 
   const onMouseDown = event => {
     const [eventX, eventY] = getCoords(event);
-    currentDrag = simulation.find(eventX, eventY, radius);
+    dragNode = simulation.find(eventX, eventY, radius);
 
-    if (currentDrag) {
+    if (dragNode) {
       simulation.alphaTarget(0.3).restart();
-      currentDrag.fx = eventX;
-      currentDrag.fy = eventY;
+      dragNode.fx = eventX;
+      dragNode.fy = eventY;
+      onHoverNode(undefined);
     }
   };
 
   const onMouseMove = event => {
-    if (currentDrag) {
-      const [eventX, eventY] = getCoords(event);
-      currentDrag.fx = eventX;
-      currentDrag.fy = eventY;
+    const [eventX, eventY] = getCoords(event);
+
+    if (dragNode) {
+      dragNode.fx = eventX;
+      dragNode.fy = eventY;
+    } else {
+      onHoverNode(simulation.find(eventX, eventY, radius));
     }
   };
 
   const onMouseUp = event => {
-    if (currentDrag) {
-      currentDrag.fx = null;
-      currentDrag.fy = null;
-      currentDrag = null;
+    if (dragNode) {
+      dragNode.fx = null;
+      dragNode.fy = null;
+      dragNode = null;
     } else {
       simulation.alphaTarget(0);
     }
@@ -59,18 +95,20 @@ const enableDrag = (canvas, simulation) => {
   };
 };
 
-const useSimulationPositions = (canvasRef, { height, links, nodes, width }) => useEffect(
+const useSimulationPositions = (canvasRef, links, nodes, setPopover) => useEffect(
   () => {
-    const context = canvasRef.current.getContext("2d");
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+
     const simulation = forceSimulation(nodes)
       .force("center", forceCenter())
       .force("collide", forceCollide(radius))
       .force("link", forceLink().distance(150).links(links).strength(link => link.strength));
 
     simulation.on("tick", () => {
-      context.clearRect(0, 0, width, height);
+      context.clearRect(0, 0, canvas.width, canvas.height);
       context.save();
-      context.translate(width / 2, height / 2);
+      context.translate(canvas.width / 2, canvas.height / 2);
 
       context.beginPath();
       links.forEach(link => {
@@ -95,14 +133,14 @@ const useSimulationPositions = (canvasRef, { height, links, nodes, width }) => u
       context.restore();
     });
 
-    const disableDrag = enableDrag(canvasRef.current, simulation);
+    const disableDrag = enableDrag(canvas, simulation, setPopover);
 
     return () => {
       simulation.on("tick", null);
       disableDrag();
     }
   },
-  [canvasRef, height, links, nodes, width]
+  [canvasRef, links, nodes, setPopover]
 );
 
 const makeSourceLinks = (compare, source, users) => {
@@ -134,7 +172,7 @@ const makeLinks = (compare, currentUser, users) => {
 const makeNodes = (currentUser, users, getColor) => users.map(user => {
   const node = {
     index: user.key,
-    label: user.initials,
+    label: user.name,
     color: getColor(user)
   };
 
@@ -145,11 +183,33 @@ const makeNodes = (currentUser, users, getColor) => users.map(user => {
   return node;
 });
 
+const UserGraphPopover = ({ node, left, top, show }) => {
+  const classList = ["popover"];
+  if (show) {
+    classList.push("show");
+  }
+
+  return ReactDOM.createPortal(
+    <div className={classList.join(" ")} style={{ left, top }}>
+      <div className="popover--caret" />
+      {node && <div className="popover--content">{node.label}</div>}
+    </div>,
+    document.body
+  );
+};
+
 const UserGraphCanvas = ({ height, links, nodes, width }) => {
   const canvasRef = useRef();
-  useSimulationPositions(canvasRef, { height, links, nodes, width });
+  const [popover, setPopover] = useState({ node: null, left: 0, top: 0 });
 
-  return <canvas ref={canvasRef} height={height} width={width} />;
+  useSimulationPositions(canvasRef, links, nodes, setPopover);
+
+  return (
+    <>
+      <canvas ref={canvasRef} height={height} width={width} />
+      <UserGraphPopover {...popover} />
+    </>
+  );
 };
 
 const UserGraph = ({ compare, currentUser, users }) => {
