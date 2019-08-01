@@ -33,7 +33,7 @@ const useSimulationPositions = (canvasRef, { height, links, nodes, width }) => u
         context.beginPath();
         context.moveTo(node.x + 5, node.y);
         context.arc(node.x, node.y, 5, 0, 2 * Math.PI);
-        context.fillStyle = node.fill;
+        context.fillStyle = node.color;
         context.fill();
         context.strokeStyle = "#fff";
         context.stroke();
