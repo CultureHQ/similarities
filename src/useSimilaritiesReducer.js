@@ -8,7 +8,7 @@ import seedUsers from "./seeds/users.json";
 import makeCompare from "./makeCompare";
 
 const makeConnectionMaker = users => {
-  const getKey = () => Math.floor(Math.random() * users.length).toString();
+  const getKey = () => Math.floor(Math.random() * users.length);
 
   return () => {
     let left = getKey();
@@ -42,7 +42,7 @@ const makeInitialState = () => {
   const locations = seedLocations.map((name, key) => ({ key, name }));
 
   const users = seedUsers.map((name, key) => ({
-    key: key.toString(),
+    key,
     connectionKeys: [],
     departmentKeys: departmentKeys.filter(() => Math.random() < 0.3),
     interestKeys: interestKeys.filter(() => Math.random() < 0.1),
@@ -53,7 +53,7 @@ const makeInitialState = () => {
   }));
 
   const makeConnection = makeConnectionMaker(users);
-  Array(users.length * 10).fill(0).forEach(() => {
+  Array(users.length * 5).fill(0).forEach(() => {
     makeConnection();
   });
 

@@ -4,23 +4,11 @@ import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, f
 const radius = 5;
 const labelOffset = { x: radius / 2, y: -radius / 4 };
 
-const nodeId = node => node.id;
-const linkId = link => `${link.source.id || link.source}=>${link.target.id || link.target}`;
-
 const createSimulation = ({ height, links, nodes, width }) => {
-  const centerX = width / 2;
-  const centerY = height / 2;
-
-  return forceSimulation()
-    .nodes(nodes.map(({ id }) => ({ id })))
-    .force("center", forceCenter(centerX, centerY))
+  return forceSimulation(nodes)
     .force("charge", forceManyBody())
     .force("collide", forceCollide(3))
-    .force("link", forceLink().distance(150).id(nodeId).links(links.map(
-      ({ source, target, value }) => ({ source, target, value })
-    )))
-    .force("x", forceX(centerX))
-    .force("y", forceY(centerY));
+    .force("link", forceLink().distance(150).links(links));
 };
 
 const ForceGraphLink = ({ link }) => (
@@ -39,69 +27,47 @@ const setAttributes = (element, attributes) => element && Object.keys(attributes
   element.setAttribute(key, attributes[key]);
 });
 
-const useSimulationPositions = (graphRef, { height, links, nodes, width }) => useEffect(
+const useSimulationPositions = (canvasRef, { height, links, nodes, width }) => useEffect(
   () => {
+    const context = canvasRef.current.getContext("2d");
     const simulation = createSimulation({ height, links, nodes, width });
-    let frame;
 
     simulation.on("tick", () => {
-      frame = window.requestAnimationFrame(() => {
-        const nodesNode = graphRef.current.querySelector(".force--nodes");
-        const labelsNode = graphRef.current.querySelector(".force--labels");
+      context.clearRect(0, 0, width, height);
+      context.save();
+      context.translate(width / 2, height / 2);
 
-        simulation.nodes().forEach((node, index) => {
-          setAttributes(nodesNode.childNodes[index], {
-            cx: node.x,
-            cy: node.y
-          });
-
-          setAttributes(labelsNode.childNodes[index], {
-            x: node.x + labelOffset.x,
-            y: node.y + labelOffset.y
-          });
-        });
-
-        const linksNode = graphRef.current.querySelector(".force--links");
-
-        simulation.force("link").links().forEach((link, index) => {
-          setAttributes(linksNode.childNodes[index], {
-            x1: link.source.x,
-            y1: link.source.y,
-            x2: link.target.x,
-            y2: link.target.y
-          });
-        });
+      context.beginPath();
+      links.forEach(link => {
+        context.moveTo(link.source.x, link.source.y);
+        context.lineTo(link.target.x, link.target.y);
       });
+      context.strokeStyle = "#ccc";
+      context.stroke();
+
+      nodes.forEach(node => {
+        context.beginPath();
+        context.moveTo(node.x + 5, node.y);
+        context.arc(node.x, node.y, 5, 0, 2 * Math.PI);
+        context.fillStyle = node.fill;
+        context.fill();
+        context.strokeStyle = "#fff";
+        context.stroke();
+      });
+
+      context.restore();
     });
 
-    return () => {
-      simulation.on("tick", null);
-
-      if (frame) {
-        window.cancelAnimationFrame(frame);
-      }
-    };
+    return () => simulation.on("tick", null);
   },
-  [graphRef, height, links, nodes, width]
+  [canvasRef, height, links, nodes, width]
 );
 
 const ForceGraph = ({ height = 400, links, nodes, width = 400 }) => {
-  const graphRef = useRef();
-  useSimulationPositions(graphRef, { height, links, nodes, width });
+  const canvasRef = useRef();
+  useSimulationPositions(canvasRef, { height, links, nodes, width });
 
-  return (
-    <svg className="force" ref={graphRef} height={height} width={width}>
-      <g className="force--links">
-        {links.map(link => <ForceGraphLink key={linkId(link)} link={link} />)}
-      </g>
-      <g className="force--nodes">
-        {nodes.map(node => <ForceGraphNode key={nodeId(node)} node={node} />)}
-      </g>
-      <g className="force--labels">
-        {nodes.map(node => <ForceGraphLabel key={nodeId(node)} node={node} />)}
-      </g>
-    </svg>
-  );
+  return <canvas className="force" ref={canvasRef} height={height} width={width} />;
 };
 
 export default ForceGraph;

@@ -41,12 +41,9 @@ const makeGetFill = (coloring, users) => {
   return user => keyColors[getKey(user)] || "#333";
 };
 
-const makeUserLinks = (compare, user, users) => user.connectionKeys.map(connectionKey => ({
-  id: `${user.key}-${connectionKey}`,
-  source: user.key,
-  target: connectionKey,
-  value: compare(user, users.find(otherUser => otherUser.key === connectionKey))
-}));
+const makeUserLinks = (compare, user, users) => user.connectionKeys.map(
+  connectionKey => ({ source: user.key, target: connectionKey })
+);
 
 const makeGraphLinks = (compare, currentUser, users) => {
   if (currentUser) {
@@ -59,7 +56,7 @@ const UserGraph = ({ compare, currentUser, users }) => {
   const [coloring, setColoring] = useState(null);
   const getFill = makeGetFill(coloring, users);
 
-  const nodes = users.map(user => ({ id: user.key, label: user.initials, fill: getFill(user) }));
+  const nodes = users.map(user => ({ index: user.key, label: user.initials, fill: getFill(user) }));
   const links = makeGraphLinks(compare, currentUser, users);
 
   return (
