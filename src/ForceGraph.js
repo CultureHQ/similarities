@@ -11,22 +11,6 @@ const createSimulation = ({ height, links, nodes, width }) => {
     .force("link", forceLink().distance(150).links(links));
 };
 
-const ForceGraphLink = ({ link }) => (
-  <line opacity={0.3} stroke="#999" strokeWidth={Math.sqrt(link.value)} />
-);
-
-const ForceGraphNode = ({ node: { fill = "#333" } }) => (
-  <circle fill={fill} r={radius} stroke="#fff" strokeWidth={1} />
-);
-
-const ForceGraphLabel = ({ node }) => (
-  <text className="force--label">{node.label}</text>
-);
-
-const setAttributes = (element, attributes) => element && Object.keys(attributes).forEach(key => {
-  element.setAttribute(key, attributes[key]);
-});
-
 const useSimulationPositions = (canvasRef, { height, links, nodes, width }) => useEffect(
   () => {
     const context = canvasRef.current.getContext("2d");
@@ -67,7 +51,7 @@ const ForceGraph = ({ height = 400, links, nodes, width = 400 }) => {
   const canvasRef = useRef();
   useSimulationPositions(canvasRef, { height, links, nodes, width });
 
-  return <canvas className="force" ref={canvasRef} height={height} width={width} />;
+  return <canvas ref={canvasRef} height={height} width={width} />;
 };
 
 export default ForceGraph;

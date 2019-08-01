@@ -221,10 +221,6 @@ footer a, footer a:hover {
   color: #f7f7f7;
 }
 
-.force {
-  overflow: visible;
-}
-
 .force--label {
   pointer-events: none;
 }
