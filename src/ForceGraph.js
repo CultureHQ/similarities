@@ -16,7 +16,7 @@ const createSimulation = ({ height, links, nodes, width }) => {
     .force("center", forceCenter(centerX, centerY))
     .force("charge", forceManyBody())
     .force("collide", forceCollide(3))
-    .force("link", forceLink().distance(200).id(nodeId).links(links.map(
+    .force("link", forceLink().distance(150).id(nodeId).links(links.map(
       ({ source, target, value }) => ({ source, target, value })
     )))
     .force("x", forceX(centerX))
@@ -27,14 +27,12 @@ const ForceGraphLink = ({ link }) => (
   <line opacity={0.3} stroke="#999" strokeWidth={Math.sqrt(link.value)} />
 );
 
-const ForceGraphNode = () => (
-  <circle fill="#333" r={radius} stroke="#fff" strokeWidth={1} />
+const ForceGraphNode = ({ node: { fill = "#333" } }) => (
+  <circle fill={fill} r={radius} stroke="#fff" strokeWidth={1} />
 );
 
 const ForceGraphLabel = ({ node }) => (
-  <text key={`${nodeId(node)}-label`} className="force-label">
-    {node.label}
-  </text>
+  <text className="force--label">{node.label}</text>
 );
 
 const setAttributes = (element, attributes) => element && Object.keys(attributes).forEach(key => {
@@ -48,8 +46,8 @@ const useSimulationPositions = (graphRef, { height, links, nodes, width }) => us
 
     simulation.on("tick", () => {
       frame = window.requestAnimationFrame(() => {
-        const nodesNode = graphRef.current.querySelector(".nodes");
-        const labelsNode = graphRef.current.querySelector(".labels");
+        const nodesNode = graphRef.current.querySelector(".force--nodes");
+        const labelsNode = graphRef.current.querySelector(".force--labels");
 
         simulation.nodes().forEach((node, index) => {
           setAttributes(nodesNode.childNodes[index], {
@@ -63,7 +61,7 @@ const useSimulationPositions = (graphRef, { height, links, nodes, width }) => us
           });
         });
 
-        const linksNode = graphRef.current.querySelector(".links");
+        const linksNode = graphRef.current.querySelector(".force--links");
 
         simulation.force("link").links().forEach((link, index) => {
           setAttributes(linksNode.childNodes[index], {
@@ -92,14 +90,14 @@ const ForceGraph = ({ height = 400, links, nodes, width = 400 }) => {
   useSimulationPositions(graphRef, { height, links, nodes, width });
 
   return (
-    <svg ref={graphRef} height={height} width={width}>
-      <g className="links">
+    <svg className="force" ref={graphRef} height={height} width={width}>
+      <g className="force--links">
         {links.map(link => <ForceGraphLink key={linkId(link)} link={link} />)}
       </g>
-      <g className="nodes">
-        {nodes.map(node => <ForceGraphNode key={nodeId(node)} />)}
+      <g className="force--nodes">
+        {nodes.map(node => <ForceGraphNode key={nodeId(node)} node={node} />)}
       </g>
-      <g className="labels">
+      <g className="force--labels">
         {nodes.map(node => <ForceGraphLabel key={nodeId(node)} node={node} />)}
       </g>
     </svg>
