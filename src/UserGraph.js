@@ -105,10 +105,13 @@ const useSimulationPositions = (canvasRef, links, nodes, setPopover) => useEffec
       .force("collide", forceCollide(radius))
       .force("link", forceLink().distance(150).links(links).strength(link => link.strength));
 
+    const width = parseInt(canvas.style.width, 10);
+    const height = parseInt(canvas.style.height, 10);
+
     simulation.on("tick", () => {
       context.clearRect(0, 0, canvas.width, canvas.height);
       context.save();
-      context.translate(canvas.width / 2, canvas.height / 2);
+      context.translate(width / 2, height / 2);
 
       context.beginPath();
       links.forEach(link => {
@@ -198,10 +201,25 @@ const UserGraphPopover = ({ node, left, top, show }) => {
   );
 };
 
+const useCanvasPixelRatio = (canvasRef, height, width, ratio) => useEffect(
+  () => {
+    const canvas = canvasRef.current;
+
+    canvas.height = height * ratio;
+    canvas.width = width * ratio;
+    canvas.style.height = `${height}px`;
+    canvas.style.width = `${width}px`;
+
+    canvas.getContext("2d").scale(ratio, ratio);
+  },
+  [canvasRef, height, width, ratio]
+);
+
 const UserGraphCanvas = ({ height, links, nodes, width }) => {
   const canvasRef = useRef();
   const [popover, setPopover] = useState({ node: null, left: 0, top: 0 });
 
+  useCanvasPixelRatio(canvasRef, height, width, 2);
   useSimulationPositions(canvasRef, links, nodes, setPopover);
 
   return (
