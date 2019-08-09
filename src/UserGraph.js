@@ -74,7 +74,7 @@ const enableDrag = (canvas, simulation, setPopover) => {
     }
   };
 
-  const onMouseUp = event => {
+  const onMouseUp = () => {
     if (dragNode) {
       dragNode.fx = null;
       dragNode.fy = null;
@@ -141,7 +141,7 @@ const useSimulationPositions = (canvasRef, links, nodes, setPopover) => useEffec
     return () => {
       simulation.on("tick", null);
       disableDrag();
-    }
+    };
   },
   [canvasRef, links, nodes, setPopover]
 );
@@ -224,7 +224,7 @@ const UserGraphCanvas = ({ height, links, nodes, width }) => {
 
   return (
     <>
-      <canvas ref={canvasRef} height={height} width={width} />
+      <canvas aria-label="Force graph" ref={canvasRef} height={height} width={width} />
       <UserGraphPopover {...popover} />
     </>
   );
