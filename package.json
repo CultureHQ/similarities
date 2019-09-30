@@ -24,7 +24,7 @@
   "dependencies": {
     "d3-force": "^2.0.1",
     "react": "^16.9.0",
-    "react-dom": "^16.9.0"
+    "react-dom": "^16.10.1"
   },
   "devDependencies": {
     "@babel/core": "^7.6.2",
