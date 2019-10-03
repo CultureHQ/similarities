@@ -6,10 +6,10 @@ import seedLocations from "./seeds/locations.json";
 import seedUsers from "./seeds/users.json";
 
 import makeCompare from "./makeCompare";
-import { Department, Interest, Interests, Location, User, Weights } from "./typings";
+import { Compare, Department, Interest, Interests, Location, User, Weights } from "./typings";
 
 type ReducerState = {
-  compare: (left: User, right: User) => number;
+  compare: Compare;
   currentUser: null | User;
   departments: Department[];
   interests: Interests;
@@ -94,15 +94,19 @@ type ReducerAction =
   | { type: "UPDATE_USER", user: User }
   | { type: "UPDATE_WEIGHT", key: keyof Weights, value: number };
 
-export const clearUser = () => ({ type: "CLEAR_USER" });
+export const clearUser = () => ({ type: "CLEAR_USER" as const });
 
-export const selectUser = (user: User) => ({ type: "SELECT_USER", user });
+export const selectUser = (user: User) => ({ type: "SELECT_USER" as const, user });
 
-export const updateUser = (user: User) => ({ type: "UPDATE_USER", user });
+export const updateUser = (user: User) => ({ type: "UPDATE_USER" as const, user });
 
 export const updateWeight = ({ key, value }: { key: keyof Weights, value: number }) => ({
-  type: "UPDATE_WEIGHT", key, value
+  type: "UPDATE_WEIGHT" as const,
+  key,
+  value
 });
+
+export type Dispatch = (action: ReducerAction) => void;
 
 const reducer = (state: ReducerState, action: ReducerAction) => {
   switch (action.type) {
@@ -126,7 +130,7 @@ const reducer = (state: ReducerState, action: ReducerAction) => {
       return { ...nextState, compare: makeCompare(nextState) };
     }
     default:
-      return state;
+      throw new Error();
   }
 };
 

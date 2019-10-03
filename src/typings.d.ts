@@ -1,5 +1,7 @@
 import seedInterests from "./seeds/interests.json";
 
+export type Compare = (left: User, right: User) => number;
+
 export type Department = {
   key: number;
   name: string;
