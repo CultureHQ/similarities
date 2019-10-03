@@ -2,7 +2,9 @@ import { useState } from "react";
 
 import { User } from "./typings";
 
-type Coloring = null | "location" | "department";
+export type Coloring = null | "location" | "department";
+
+export type ColoringChange = (coloring: Coloring) => void;
 
 const staticColors = ["#8cb4d6", "#79b17d", "#ffd24b"];
 
@@ -57,9 +59,9 @@ const useColoring = (users: User[]) => {
     getColor: makeGetColor("location", users)
   });
 
-  const onChangeColoring = (coloring: Coloring) => setState({
-    coloring, getColor: makeGetColor(coloring, users)
-  });
+  const onChangeColoring: ColoringChange = (coloring: Coloring) => {
+    setState({ coloring, getColor: makeGetColor(coloring, users) });
+  };
 
   return { ...state, onChangeColoring };
 };
