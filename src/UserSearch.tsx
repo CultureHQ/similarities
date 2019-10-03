@@ -1,12 +1,19 @@
 import React, { useCallback, useMemo, useState } from "react";
 
-import { selectUser } from "./useSimilaritiesReducer";
+import { Dispatch, selectUser } from "./useSimilaritiesReducer";
 
-const UserSearch = ({ dispatch, users }) => {
+import { User } from "./typings";
+
+type UserSearchProps = {
+  dispatch: Dispatch;
+  users: User[];
+};
+
+const UserSearch: React.FC<UserSearchProps> = ({ dispatch, users }) => {
   const [search, setSearch] = useState("");
   const onSearchChange = useCallback(event => setSearch(event.target.value), []);
 
-  const onUserClick = useCallback(clicked => {
+  const onUserClick = useCallback((clicked: User) => {
     setSearch("");
     dispatch(selectUser(clicked));
   }, [dispatch]);
