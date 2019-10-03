@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 
 import { Dispatch, selectUser } from "./useSimilaritiesReducer";
 
@@ -11,21 +11,27 @@ type UserSearchProps = {
 
 const UserSearch: React.FC<UserSearchProps> = ({ dispatch, users }) => {
   const [search, setSearch] = useState("");
-  const onSearchChange = useCallback(event => setSearch(event.target.value), []);
 
-  const onUserClick = useCallback((clicked: User) => {
+  const onSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(event.target.value);
+  };
+
+  const onUserClick = (clicked: User) => {
     setSearch("");
     dispatch(selectUser(clicked));
-  }, [dispatch]);
+  };
 
-  const results = useMemo(() => {
-    if (!search) {
-      return [];
-    }
+  const results = useMemo(
+    () => {
+      if (!search) {
+        return [];
+      }
 
-    const term = search.toLowerCase();
-    return users.filter(({ name }) => name.toLowerCase().startsWith(term));
-  }, [search, users]);
+      const term = search.toLowerCase();
+      return users.filter(({ name }) => name.toLowerCase().startsWith(term));
+    },
+    [search, users]
+  );
 
   return (
     <div className="search">
