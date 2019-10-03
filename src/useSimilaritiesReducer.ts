@@ -7,7 +7,53 @@ import seedUsers from "./seeds/users.json";
 
 import makeCompare from "./makeCompare";
 
-const makeConnectionMaker = users => {
+type Department = {
+  key: number;
+  name: string;
+};
+
+type Interest = {
+  key: number;
+  name: string;
+};
+
+type Location = {
+  key: number;
+  name: string;
+};
+
+type User = {
+  key: number;
+  connectionKeys: number[];
+  departmentKeys: number[];
+  interestKeys: number[];
+  locationKey: number;
+  name: string;
+  initials: string;
+  checked: boolean;
+};
+
+type Weights = {
+  connected: number;
+  connections: number;
+  interests: number;
+  departments: number;
+  locations: number;
+};
+
+type InterestsState = Partial<{ [K in keyof typeof seedInterests]: Interest[] }>;
+
+type ReducerState = {
+  compare: (left: User, right: User) => number;
+  currentUser: null | User;
+  departments: Department[];
+  interests: InterestsState;
+  locations: Location[];
+  weights: Weights;
+  users: User[];
+};
+
+const makeConnectionMaker = (users: User[]) => {
   const getKey = () => Math.floor(Math.random() * users.length);
 
   return () => {
@@ -28,11 +74,13 @@ const makeInitialState = () => {
   const departments = seedDepartments.map((name, key) => ({ key, name }));
   const departmentKeys = departments.map(({ key }) => key);
 
-  const interests = {};
-  const interestKeys = [];
+  const interests: InterestsState = {};
+  const interestKeys: number[] = [];
 
   Object.keys(seedInterests).forEach(key => {
-    interests[key] = seedInterests[key].map(interest => {
+    const interestKey = key as keyof typeof seedInterests;
+
+    interests[interestKey] = seedInterests[interestKey].map(interest => {
       interestKeys.push(interestKeys.length);
 
       return { key: interestKeys.length, name: interest };
@@ -75,15 +123,23 @@ const makeInitialState = () => {
   return { ...state, compare: makeCompare(state) };
 };
 
+type ReducerAction =
+  { type: "CLEAR_USER" }
+  | { type: "SELECT_USER", user: User }
+  | { type: "UPDATE_USER", user: User }
+  | { type: "UPDATE_WEIGHT", key: keyof Weights, value: number };
+
 export const clearUser = () => ({ type: "CLEAR_USER" });
 
-export const selectUser = user => ({ type: "SELECT_USER", user });
+export const selectUser = (user: User) => ({ type: "SELECT_USER", user });
 
-export const updateUser = user => ({ type: "UPDATE_USER", user });
+export const updateUser = (user: User) => ({ type: "UPDATE_USER", user });
 
-export const updateWeight = ({ key, value }) => ({ type: "UPDATE_WEIGHT", key, value });
+export const updateWeight = ({ key, value }: { key: keyof Weights, value: number }) => ({
+  type: "UPDATE_WEIGHT", key, value
+});
 
-const reducer = (state, action) => {
+const reducer = (state: ReducerState, action: ReducerAction) => {
   switch (action.type) {
     case "CLEAR_USER":
       return { ...state, currentUser: null };
@@ -109,6 +165,6 @@ const reducer = (state, action) => {
   }
 };
 
-const useSimilaritiesReducer = () => useReducer(reducer, null, makeInitialState);
+const useSimilaritiesReducer = () => useReducer(reducer, undefined, makeInitialState);
 
 export default useSimilaritiesReducer;
