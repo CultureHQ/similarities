@@ -1,21 +1,34 @@
 import React from "react";
 
 import UserRow from "./UserRow";
+import { Dispatch } from "./useSimilaritiesReducer";
 
-const makeSort = (compare, user, users) => {
+import { Compare, Department, Interests, Location, User } from "./typings";
+
+const makeSort = (compare: Compare, user: null | User, users: User[]) => {
   if (user) {
     const scores = users.reduce(
       (accum, other) => ({ ...accum, [other.key]: compare(user, other) }),
-      {}
+      {} as { [key: number]: number }
     );
 
-    return (left, right) => scores[left.key] - scores[right.key];
+    return (left: User, right: User) => scores[left.key] - scores[right.key];
   }
 
-  return (left, right) => left.name.localeCompare(right.name);
+  return (left: User, right: User) => left.name.localeCompare(right.name);
 };
 
-const UserTable = ({
+type UserTableProps = {
+  compare: Compare;
+  currentUser: null | User;
+  departments: Department[];
+  dispatch: Dispatch;
+  interests: Interests;
+  locations: Location[];
+  users: User[];
+};
+
+const UserTable: React.FC<UserTableProps> = ({
   compare, currentUser, departments, dispatch, interests, locations, users
 }) => {
   const sorted = [...users].sort(makeSort(compare, currentUser, users));
