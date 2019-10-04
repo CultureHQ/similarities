@@ -5,17 +5,19 @@ import { forceSimulation, forceCenter, forceCollide, forceLink } from "d3-force"
 import UserGraphColoring from "./UserGraphColoring";
 import useColoring from "./useColoring";
 
+import { Compare, User } from "./typings";
+
 const radius = 10;
 const labels = { left: -40, top: 20 };
 
-const makeGetCoords = boundingRect => {
+const makeGetCoords = (boundingRect: ClientRect) => {
   const marginX = boundingRect.left + boundingRect.width / 2;
   const marginY = boundingRect.top + boundingRect.height / 2;
 
   return event => [event.clientX - marginX, event.clientY - marginY];
 };
 
-const makeGetCenter = boundingRect => {
+const makeGetCenter = (boundingRect: ClientRect) => {
   const marginX = boundingRect.left + boundingRect.width / 2;
   const marginY = boundingRect.top + boundingRect.height / 2;
 
@@ -146,7 +148,7 @@ const useSimulationPositions = (canvasRef, links, nodes, setPopover) => useEffec
   [canvasRef, links, nodes, setPopover]
 );
 
-const makeSourceLinks = (compare, source, users) => {
+const makeSourceLinks = (compare: Compare, source: User, users: User[]) => {
   const links = [];
 
   users.forEach(target => {
@@ -165,26 +167,34 @@ const makeSourceLinks = (compare, source, users) => {
   return links;
 };
 
-const makeLinks = (compare, currentUser, users) => {
+const makeLinks = (compare: Compare, currentUser: null | User, users: User[]) => {
   if (currentUser) {
     return makeSourceLinks(compare, currentUser, users);
   }
-  return users.flatMap(source => makeSourceLinks(compare, source, users));
+
+  let links = [];
+  users.forEach(source => {
+    links = links.concat(makeSourceLinks(compare, source, users));
+  });
+
+  return links;
 };
 
-const makeNodes = (currentUser, users, getColor) => users.map(user => {
-  const node = {
-    index: user.key,
-    label: user.name,
-    color: getColor(user)
-  };
+const makeNodes = (currentUser: null | User, users: Users[], getColor: (user: User) => string) => (
+  users.map(user => {
+    const node = {
+      index: user.key,
+      label: user.name,
+      color: getColor(user)
+    };
 
-  if (currentUser && user.key === currentUser.key) {
-    return { ...node, fx: 0, fy: 0 };
-  }
+    if (currentUser && user.key === currentUser.key) {
+      return { ...node, fx: 0, fy: 0 };
+    }
 
-  return node;
-});
+    return node;
+  })
+);
 
 const UserGraphPopover = ({ node, left, top, show }) => {
   const classList = ["popover"];
@@ -201,7 +211,12 @@ const UserGraphPopover = ({ node, left, top, show }) => {
   );
 };
 
-const useCanvasPixelRatio = (canvasRef, height, width, ratio) => useEffect(
+const useCanvasPixelRatio = (
+  canvasRef: React.RefObject<HTMLCanvasElement>,
+  height: number,
+  width: number,
+  ratio: number
+) => useEffect(
   () => {
     const canvas = canvasRef.current;
 
@@ -216,7 +231,7 @@ const useCanvasPixelRatio = (canvasRef, height, width, ratio) => useEffect(
 );
 
 const UserGraphCanvas = ({ height, links, nodes, width }) => {
-  const canvasRef = useRef();
+  const canvasRef = useRef(null);
   const [popover, setPopover] = useState({ node: null, left: 0, top: 0 });
 
   useCanvasPixelRatio(canvasRef, height, width, 2);
@@ -230,7 +245,13 @@ const UserGraphCanvas = ({ height, links, nodes, width }) => {
   );
 };
 
-const UserGraph = ({ compare, currentUser, users }) => {
+type UserGraphProps = {
+  compare: Compare;
+  currentUser: null | User;
+  users: User[];
+};
+
+const UserGraph: React.FC<UserGraphProps> = ({ compare, currentUser, users }) => {
   const { coloring, getColor, onChangeColoring } = useColoring(users);
 
   const nodes = makeNodes(currentUser, users, getColor);
