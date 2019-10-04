@@ -34,7 +34,7 @@ const makeGetColor = (coloring: Coloring, users: User[]) => {
   users.forEach(user => {
     const keyColor = getKey(user);
 
-    if (keyColor && !Object.prototype.hasOwnProperty.call(keyColors, keyColor)) {
+    if (keyColor !== undefined && !Object.prototype.hasOwnProperty.call(keyColors, keyColor)) {
       keyColors[keyColor] = "#333";
     }
   });
