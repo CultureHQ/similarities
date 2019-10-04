@@ -53,7 +53,7 @@ const enableDrag = (canvas, simulation, setPopover) => {
     }
   };
 
-  const onMouseDown = event => {
+  const onMouseDown = (event: MouseEvent) => {
     const [eventX, eventY] = getCoords(event);
     dragNode = simulation.find(eventX, eventY, radius);
 
@@ -65,7 +65,7 @@ const enableDrag = (canvas, simulation, setPopover) => {
     }
   };
 
-  const onMouseMove = event => {
+  const onMouseMove = (event: MouseEvent) => {
     const [eventX, eventY] = getCoords(event);
 
     if (dragNode) {
@@ -100,7 +100,11 @@ const enableDrag = (canvas, simulation, setPopover) => {
 const useSimulationPositions = (canvasRef, links, nodes, setPopover) => useEffect(
   () => {
     const canvas = canvasRef.current;
-    const context = canvas.getContext("2d");
+    const context = canvas && canvas.getContext("2d");
+
+    if (!canvas || !context) {
+      return;
+    }
 
     const simulation = forceSimulation(nodes)
       .force("center", forceCenter())
@@ -196,7 +200,7 @@ const makeNodes = (currentUser: null | User, users: Users[], getColor: (user: Us
   })
 );
 
-const UserGraphPopover = ({ node, left, top, show }) => {
+const UserGraphPopover = ({ node, left, top, show = false }) => {
   const classList = ["popover"];
   if (show) {
     classList.push("show");
@@ -219,13 +223,17 @@ const useCanvasPixelRatio = (
 ) => useEffect(
   () => {
     const canvas = canvasRef.current;
+    const context = canvas && canvas.getContext("2d");
+
+    if (!canvas || !context) {
+      return;
+    }
 
     canvas.height = height * ratio;
     canvas.width = width * ratio;
     canvas.style.height = `${height}px`;
     canvas.style.width = `${width}px`;
-
-    canvas.getContext("2d").scale(ratio, ratio);
+    context.scale(ratio, ratio);
   },
   [canvasRef, height, width, ratio]
 );
