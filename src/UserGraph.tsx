@@ -1,43 +1,69 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, Dispatch, SetStateAction } from "react";
 import ReactDOM from "react-dom";
-import { forceSimulation, forceCenter, forceCollide, forceLink } from "d3-force";
+import { forceSimulation, forceCenter, forceCollide, forceLink, Simulation, SimulationNodeDatum, SimulationLinkDatum } from "d3-force";
 
 import UserGraphColoring from "./UserGraphColoring";
 import useColoring from "./useColoring";
 
+import { Compare, User } from "./typings";
+
+interface GraphNode extends SimulationNodeDatum {
+  label: string;
+  color: string;
+}
+
+interface GraphLink extends SimulationLinkDatum<GraphNode> {
+  strength: number;
+  draw: boolean;
+}
+
+type GraphPopover = {
+  node: null | GraphNode;
+  left: number;
+  top: number;
+  show?: boolean;
+};
+
 const radius = 10;
 const labels = { left: -40, top: 20 };
 
-const makeGetCoords = boundingRect => {
+const makeGetCoords = (boundingRect: ClientRect) => {
   const marginX = boundingRect.left + boundingRect.width / 2;
   const marginY = boundingRect.top + boundingRect.height / 2;
 
-  return event => [event.clientX - marginX, event.clientY - marginY];
+  return (event: MouseEvent) => [event.clientX - marginX, event.clientY - marginY];
 };
 
-const makeGetCenter = boundingRect => {
+const makeGetCenter = (boundingRect: ClientRect) => {
   const marginX = boundingRect.left + boundingRect.width / 2;
   const marginY = boundingRect.top + boundingRect.height / 2;
 
-  return node => [(node.fx || node.x) + marginX, (node.fy || node.y) + marginY];
+  return (node: GraphNode) => [
+    (node.fx || node.x || 0) + marginX,
+    (node.fy || node.y || 0) + marginY
+  ];
 };
 
-const enableDrag = (canvas, simulation, setPopover) => {
+const enableDrag = (
+  canvas: HTMLCanvasElement,
+  simulation: Simulation<GraphNode, GraphLink>,
+  setPopover: Dispatch<SetStateAction<GraphPopover>>
+) => {
   const boundingRect = canvas.getBoundingClientRect();
 
   const getCoords = makeGetCoords(boundingRect);
   const getCenter = makeGetCenter(boundingRect);
 
-  let dragNode;
-  let hoverNode;
+  let dragNode: undefined | GraphNode;
+  let hoverNode: undefined | GraphNode;
 
-  const onHoverNode = node => {
+  const onHoverNode = (node: undefined | GraphNode) => {
     if (hoverNode !== node) {
       hoverNode = node;
 
       setPopover(current => {
         if (hoverNode) {
-          const [centerX, centerY] = getCenter(node);
+          const [centerX, centerY] = getCenter(hoverNode);
 
           return {
             node: hoverNode,
@@ -51,7 +77,7 @@ const enableDrag = (canvas, simulation, setPopover) => {
     }
   };
 
-  const onMouseDown = event => {
+  const onMouseDown = (event: MouseEvent) => {
     const [eventX, eventY] = getCoords(event);
     dragNode = simulation.find(eventX, eventY, radius);
 
@@ -63,7 +89,7 @@ const enableDrag = (canvas, simulation, setPopover) => {
     }
   };
 
-  const onMouseMove = event => {
+  const onMouseMove = (event: MouseEvent) => {
     const [eventX, eventY] = getCoords(event);
 
     if (dragNode) {
@@ -78,7 +104,7 @@ const enableDrag = (canvas, simulation, setPopover) => {
     if (dragNode) {
       dragNode.fx = null;
       dragNode.fy = null;
-      dragNode = null;
+      dragNode = undefined;
     } else {
       simulation.alphaTarget(0);
     }
@@ -95,18 +121,31 @@ const enableDrag = (canvas, simulation, setPopover) => {
   };
 };
 
-const useSimulationPositions = (canvasRef, links, nodes, setPopover) => useEffect(
+function isGraphNode(node: string | number | GraphNode): node is GraphNode {
+  return Object.prototype.hasOwnProperty.call(node, "label");
+}
+
+const useSimulationPositions = (
+  canvasRef: React.RefObject<HTMLCanvasElement>,
+  links: GraphLink[],
+  nodes: GraphNode[],
+  setPopover: Dispatch<SetStateAction<GraphPopover>>
+) => useEffect(
   () => {
     const canvas = canvasRef.current;
-    const context = canvas.getContext("2d");
+    const context = canvas && canvas.getContext("2d");
 
-    const simulation = forceSimulation(nodes)
+    if (!canvas || !context) {
+      return undefined;
+    }
+
+    const simulation = forceSimulation<GraphNode, GraphLink>(nodes)
       .force("center", forceCenter())
       .force("collide", forceCollide(radius))
-      .force("link", forceLink().distance(150).links(links).strength(link => link.strength));
+      .force("link", forceLink<GraphNode, GraphLink>().distance(150).links(links).strength(link => link.strength));
 
-    const width = parseInt(canvas.style.width, 10);
-    const height = parseInt(canvas.style.height, 10);
+    const width = parseInt(canvas.style.width || "", 10);
+    const height = parseInt(canvas.style.height || "", 10);
 
     simulation.on("tick", () => {
       context.clearRect(0, 0, canvas.width, canvas.height);
@@ -115,15 +154,19 @@ const useSimulationPositions = (canvasRef, links, nodes, setPopover) => useEffec
 
       context.beginPath();
       links.forEach(link => {
-        if (link.draw) {
-          context.moveTo(link.source.x, link.source.y);
-          context.lineTo(link.target.x, link.target.y);
+        if (link.draw && isGraphNode(link.source) && isGraphNode(link.target)) {
+          context.moveTo(link.source.x || 0, link.source.y || 0);
+          context.lineTo(link.target.x || 0, link.target.y || 0);
         }
       });
       context.strokeStyle = "#ccc";
       context.stroke();
 
       nodes.forEach(node => {
+        if (node.x === undefined || node.y === undefined) {
+          return;
+        }
+
         context.beginPath();
         context.moveTo(node.x + radius, node.y);
         context.arc(node.x, node.y, radius, 0, 2 * Math.PI);
@@ -146,8 +189,8 @@ const useSimulationPositions = (canvasRef, links, nodes, setPopover) => useEffec
   [canvasRef, links, nodes, setPopover]
 );
 
-const makeSourceLinks = (compare, source, users) => {
-  const links = [];
+const makeSourceLinks = (compare: Compare, source: User, users: User[]) => {
+  const links: GraphLink[] = [];
 
   users.forEach(target => {
     if (source.key === target.key) {
@@ -165,28 +208,36 @@ const makeSourceLinks = (compare, source, users) => {
   return links;
 };
 
-const makeLinks = (compare, currentUser, users) => {
+const makeLinks = (compare: Compare, currentUser: null | User, users: User[]) => {
   if (currentUser) {
     return makeSourceLinks(compare, currentUser, users);
   }
-  return users.flatMap(source => makeSourceLinks(compare, source, users));
+
+  let links: GraphLink[] = [];
+  users.forEach(source => {
+    links = links.concat(makeSourceLinks(compare, source, users));
+  });
+
+  return links;
 };
 
-const makeNodes = (currentUser, users, getColor) => users.map(user => {
-  const node = {
-    index: user.key,
-    label: user.name,
-    color: getColor(user)
-  };
+const makeNodes = (currentUser: null | User, users: User[], getColor: (user: User) => string) => (
+  users.map(user => {
+    const node = {
+      index: user.key,
+      label: user.name,
+      color: getColor(user)
+    };
 
-  if (currentUser && user.key === currentUser.key) {
-    return { ...node, fx: 0, fy: 0 };
-  }
+    if (currentUser && user.key === currentUser.key) {
+      return { ...node, fx: 0, fy: 0 };
+    }
 
-  return node;
-});
+    return node;
+  })
+);
 
-const UserGraphPopover = ({ node, left, top, show }) => {
+const UserGraphPopover: React.FC<GraphPopover> = ({ node, left, top, show = false }) => {
   const classList = ["popover"];
   if (show) {
     classList.push("show");
@@ -201,23 +252,39 @@ const UserGraphPopover = ({ node, left, top, show }) => {
   );
 };
 
-const useCanvasPixelRatio = (canvasRef, height, width, ratio) => useEffect(
+const useCanvasPixelRatio = (
+  canvasRef: React.RefObject<HTMLCanvasElement>,
+  height: number,
+  width: number,
+  ratio: number
+) => useEffect(
   () => {
     const canvas = canvasRef.current;
+    const context = canvas && canvas.getContext("2d");
+
+    if (!canvas || !context) {
+      return;
+    }
 
     canvas.height = height * ratio;
     canvas.width = width * ratio;
     canvas.style.height = `${height}px`;
     canvas.style.width = `${width}px`;
-
-    canvas.getContext("2d").scale(ratio, ratio);
+    context.scale(ratio, ratio);
   },
   [canvasRef, height, width, ratio]
 );
 
-const UserGraphCanvas = ({ height, links, nodes, width }) => {
-  const canvasRef = useRef();
-  const [popover, setPopover] = useState({ node: null, left: 0, top: 0 });
+type UserGraphCanvasProps = {
+  height: number;
+  links: GraphLink[];
+  nodes: GraphNode[];
+  width: number;
+};
+
+const UserGraphCanvas: React.FC<UserGraphCanvasProps> = ({ height, links, nodes, width }) => {
+  const canvasRef = useRef(null);
+  const [popover, setPopover] = useState<GraphPopover>({ node: null, left: 0, top: 0 });
 
   useCanvasPixelRatio(canvasRef, height, width, 2);
   useSimulationPositions(canvasRef, links, nodes, setPopover);
@@ -230,7 +297,13 @@ const UserGraphCanvas = ({ height, links, nodes, width }) => {
   );
 };
 
-const UserGraph = ({ compare, currentUser, users }) => {
+type UserGraphProps = {
+  compare: Compare;
+  currentUser: null | User;
+  users: User[];
+};
+
+const UserGraph: React.FC<UserGraphProps> = ({ compare, currentUser, users }) => {
   const { coloring, getColor, onChangeColoring } = useColoring(users);
 
   const nodes = makeNodes(currentUser, users, getColor);

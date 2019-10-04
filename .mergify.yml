@@ -4,6 +4,7 @@ pull_request_rules:
       - base=master
       - label=dependencies
       - status-success=Lint
+      - status-success=Compile
     actions:
       merge:
         strict: true

@@ -1,12 +1,18 @@
 import React from "react";
 import ReactDOM from "react-dom";
 
-import useSimilaritiesReducer, { clearUser, updateWeight } from "./useSimilaritiesReducer";
+import useSimilaritiesReducer, { Dispatch, clearUser, updateWeight } from "./useSimilaritiesReducer";
 import UserGraph from "./UserGraph";
 import UserSearch from "./UserSearch";
 import UserTable from "./UserTable";
 
-const UserClear = ({ dispatch }) => (
+import { User, Weights } from "./typings";
+
+type UserClearProps = {
+  dispatch: Dispatch;
+};
+
+const UserClear: React.FC<UserClearProps> = ({ dispatch }) => (
   <button className="inline-btn" type="button" onClick={() => dispatch(clearUser())}>
     <svg viewBox="0 0 16 16">
       <g>
@@ -18,8 +24,16 @@ const UserClear = ({ dispatch }) => (
   </button>
 );
 
-const Weight = ({ dispatch, weightKey, weights }) => {
-  const onChange = event => dispatch(updateWeight({ key: weightKey, value: event.target.value }));
+type WeightProps = {
+  dispatch: Dispatch;
+  weightKey: keyof Weights;
+  weights: Weights;
+};
+
+const Weight: React.FC<WeightProps> = ({ dispatch, weightKey, weights }) => {
+  const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(updateWeight({ key: weightKey, value: parseFloat(event.target.value) }));
+  };
 
   return (
     <label htmlFor={weightKey}>
@@ -39,7 +53,7 @@ const Weight = ({ dispatch, weightKey, weights }) => {
   );
 };
 
-const AppFooter = () => ReactDOM.createPortal(
+const AppFooter: React.FC = () => ReactDOM.createPortal(
   <footer>
     <p>
       Copyright (c) 2019 CultureHQ
@@ -52,7 +66,12 @@ const AppFooter = () => ReactDOM.createPortal(
   document.body
 );
 
-const AppHeading = ({ currentUser, dispatch }) => {
+type AppHeadingProps = {
+  currentUser: null | User;
+  dispatch: Dispatch;
+};
+
+const AppHeading: React.FC<AppHeadingProps> = ({ currentUser, dispatch }) => {
   if (!currentUser) {
     return <h1>Similarities</h1>;
   }
@@ -64,7 +83,7 @@ const AppHeading = ({ currentUser, dispatch }) => {
   );
 };
 
-const App = () => {
+const App: React.FC = () => {
   const [state, dispatch] = useSimilaritiesReducer();
   const { compare, currentUser, departments, interests, locations, users, weights } = state;
 
@@ -80,9 +99,11 @@ const App = () => {
           <UserGraph compare={compare} currentUser={currentUser} users={users} />
         </header>
         <section className="weights">
-          {Object.keys(weights).map(weightKey => (
-            <Weight key={weightKey} dispatch={dispatch} weightKey={weightKey} weights={weights} />
-          ))}
+          {Object.keys(weights).map(weightKey => {
+            const key = weightKey as keyof typeof weights;
+
+            return <Weight key={key} dispatch={dispatch} weightKey={key} weights={weights} />;
+          })}
         </section>
         <section>
           <UserTable
@@ -93,7 +114,6 @@ const App = () => {
             interests={interests}
             locations={locations}
             users={users}
-            weights={weights}
           />
         </section>
       </main>

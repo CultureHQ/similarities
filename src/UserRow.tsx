@@ -1,14 +1,24 @@
-import React, { useCallback, useState } from "react";
+import React, { useState } from "react";
 
-import { selectUser, updateUser } from "./useSimilaritiesReducer";
+import { Dispatch, selectUser, updateUser } from "./useSimilaritiesReducer";
 
-const EditUserLocation = ({ dispatch, location, user }) => {
+import { Department, Interest, Interests, Location, User } from "./typings";
+
+type EditUserLocationProps = {
+  dispatch: Dispatch;
+  location: Location;
+  user: User;
+};
+
+const EditUserLocation: React.FC<EditUserLocationProps> = ({ dispatch, location, user }) => {
   const name = `ul-${user.key}-${location.key}`;
 
-  const onLocationCheck = useCallback(
-    event => dispatch(updateUser({ ...user, locationKey: parseInt(event.target.dataset.key, 10) })),
-    [dispatch, user]
-  );
+  const onLocationCheck = (event: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(updateUser({
+      ...user,
+      locationKey: parseInt(event.target.dataset.key || "", 10)
+    }));
+  };
 
   return (
     <label htmlFor={name}>
@@ -27,20 +37,25 @@ const EditUserLocation = ({ dispatch, location, user }) => {
   );
 };
 
-const EditUserDepartment = ({ department, dispatch, user }) => {
+type EditUserDepartmentProps = {
+  department: Department;
+  dispatch: Dispatch;
+  user: User;
+};
+
+const EditUserDepartment: React.FC<EditUserDepartmentProps> = ({ department, dispatch, user }) => {
   const name = `ud-${user.key}-${department.key}`;
 
-  const onDepartmentCheck = useCallback(
-    event => dispatch(updateUser({
+  const onDepartmentCheck = (event: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(updateUser({
       ...user,
       departmentKeys: (
         event.target.checked
           ? [...user.departmentKeys, department.key]
           : user.departmentKeys.filter(departmentKey => departmentKey !== department.key)
       )
-    })),
-    [department, dispatch, user]
-  );
+    }));
+  };
 
   return (
     <label htmlFor={name}>
@@ -58,20 +73,25 @@ const EditUserDepartment = ({ department, dispatch, user }) => {
   );
 };
 
-const EditUserInterest = ({ dispatch, interest, user }) => {
+type EditUserInterestProps = {
+  dispatch: Dispatch;
+  interest: Interest;
+  user: User;
+};
+
+const EditUserInterest: React.FC<EditUserInterestProps> = ({ dispatch, interest, user }) => {
   const name = `ui-${user.key}-${interest.key}`;
 
-  const onInterestCheck = useCallback(
-    event => dispatch(updateUser({
+  const onInterestCheck = (event: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(updateUser({
       ...user,
       interestKeys: (
         event.target.checked
           ? [...user.interestKeys, interest.key]
           : user.interestKeys.filter(interestKey => interestKey !== interest.key)
       )
-    })),
-    [dispatch, interest, user]
-  );
+    }));
+  };
 
   return (
     <label htmlFor={name}>
@@ -89,7 +109,18 @@ const EditUserInterest = ({ dispatch, interest, user }) => {
   );
 };
 
-const EditUserInterestCategory = ({
+type InterestKey = keyof Interests;
+
+type EditUserInterestCategoryProps = {
+  currentInterestKey: null | InterestKey;
+  dispatch: Dispatch;
+  interestKey: InterestKey;
+  interests: Interests;
+  setCurrentInterestKey: (interestKey: null | InterestKey) => void;
+  user: User;
+};
+
+const EditUserInterestCategory: React.FC<EditUserInterestCategoryProps> = ({
   currentInterestKey, dispatch, interestKey, interests, setCurrentInterestKey, user
 }) => {
   const name = `uic-${user.key}-${interestKey}`;
@@ -122,31 +153,34 @@ const EditUserInterestCategory = ({
   );
 };
 
-const EditUserConnection = ({ dispatch, other, user }) => {
+type EditUserConnectionProps = {
+  dispatch: Dispatch;
+  other: User;
+  user: User;
+};
+
+const EditUserConnection: React.FC<EditUserConnectionProps> = ({ dispatch, other, user }) => {
   const name = `uc-${user.key}-${other.key}`;
 
-  const onConnectionCheck = useCallback(
-    event => {
-      dispatch(updateUser({
-        ...user,
-        connectionKeys: (
-          event.target.checked
-            ? [...user.connectionKeys, other.key]
-            : user.connectionKeys.filter(connectionKeys => connectionKeys !== other.key)
-        )
-      }));
+  const onConnectionCheck = (event: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(updateUser({
+      ...user,
+      connectionKeys: (
+        event.target.checked
+          ? [...user.connectionKeys, other.key]
+          : user.connectionKeys.filter(connectionKeys => connectionKeys !== other.key)
+      )
+    }));
 
-      dispatch(updateUser({
-        ...other,
-        connectionKeys: (
-          event.target.checked
-            ? [...other.connectionKeys, user.key]
-            : other.connectionKeys.filter(connectionKey => connectionKey !== user.key)
-        )
-      }));
-    },
-    [dispatch, other, user]
-  );
+    dispatch(updateUser({
+      ...other,
+      connectionKeys: (
+        event.target.checked
+          ? [...other.connectionKeys, user.key]
+          : other.connectionKeys.filter(connectionKey => connectionKey !== user.key)
+      )
+    }));
+  };
 
   return (
     <label htmlFor={name}>
@@ -164,18 +198,25 @@ const EditUserConnection = ({ dispatch, other, user }) => {
   );
 };
 
-const EditRow = ({ departments, dispatch, interests, locations, user, users }) => {
-  const onNameChange = useCallback(
-    event => dispatch(updateUser({ ...user, name: event.target.value })),
-    [dispatch, user]
-  );
+type EditRowProps = {
+  departments: Department[];
+  dispatch: Dispatch;
+  interests: Interests;
+  locations: Location[];
+  user: User;
+  users: User[];
+};
 
-  const onUserUncheck = useCallback(
-    () => dispatch(updateUser({ ...user, checked: false })),
-    [dispatch, user]
-  );
+const EditRow: React.FC<EditRowProps> = ({
+  departments, dispatch, interests, locations, user, users
+}) => {
+  const onNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(updateUser({ ...user, name: event.target.value }));
+  };
 
-  const [currentInterestKey, setCurrentInterestKey] = useState(null);
+  const onUserUncheck = () => dispatch(updateUser({ ...user, checked: false }));
+
+  const [currentInterestKey, setCurrentInterestKey] = useState<null | InterestKey>(null);
 
   return (
     <tr className="checked">
@@ -206,17 +247,21 @@ const EditRow = ({ departments, dispatch, interests, locations, user, users }) =
       <td>
         <div className="list">
           <ul>
-            {Object.keys(interests).map(key => (
-              <EditUserInterestCategory
-                key={key}
-                currentInterestKey={currentInterestKey}
-                dispatch={dispatch}
-                interestKey={key}
-                interests={interests}
-                setCurrentInterestKey={setCurrentInterestKey}
-                user={user}
-              />
-            ))}
+            {Object.keys(interests).map(key => {
+              const interestKey = key as keyof Interests;
+
+              return (
+                <EditUserInterestCategory
+                  key={interestKey}
+                  currentInterestKey={currentInterestKey}
+                  dispatch={dispatch}
+                  interestKey={interestKey}
+                  interests={interests}
+                  setCurrentInterestKey={setCurrentInterestKey}
+                  user={user}
+                />
+              );
+            })}
           </ul>
         </div>
       </td>
@@ -235,10 +280,15 @@ const EditRow = ({ departments, dispatch, interests, locations, user, users }) =
   );
 };
 
-const SummaryRow = ({ dispatch, locations, user }) => {
-  const onUserCheck = useCallback(
-    () => dispatch(updateUser({ ...user, checked: true })), [dispatch, user]
-  );
+type SummaryRowProps = {
+  dispatch: Dispatch;
+  locations: Location[];
+  user: User;
+};
+
+const SummaryRow: React.FC<SummaryRowProps> = ({ dispatch, locations, user }) => {
+  const onUserCheck = () => dispatch(updateUser({ ...user, checked: true }));
+  const matchedLocation = locations.find(location => location.key === user.locationKey);
 
   return (
     <tr>
@@ -251,7 +301,7 @@ const SummaryRow = ({ dispatch, locations, user }) => {
         </button>
       </td>
       <td>
-        {locations.find(location => location.key === user.locationKey).name}
+        {matchedLocation && matchedLocation.name}
       </td>
       <td>
         {user.departmentKeys.length} departments
@@ -266,7 +316,9 @@ const SummaryRow = ({ dispatch, locations, user }) => {
   );
 };
 
-const UserRow = props => {
+type UserRowProps = EditRowProps & SummaryRowProps;
+
+const UserRow = (props: UserRowProps) => {
   const { user } = props;
   const Component = user.checked ? EditRow : SummaryRow;
 

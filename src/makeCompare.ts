@@ -1,6 +1,16 @@
-const makeCompare = ({ departments, interests, locations, users, weights }) => {
-  const interestsLength = (
-    Object.keys(interests).reduce((accum, key) => accum + interests[key].length, 0)
+import { Compare, Department, Interests, Location, User, Weights } from "./typings";
+
+type Inputs = {
+  departments: Department[];
+  interests: Interests;
+  locations: Location[];
+  users: User[];
+  weights: Weights;
+};
+
+const makeCompare = ({ departments, interests, locations, users, weights }: Inputs): Compare => {
+  const interestsLength = Object.keys(interests).reduce(
+    (accum, key) => accum + interests[key as keyof Interests].length, 0
   );
 
   const maximum = (
@@ -11,7 +21,7 @@ const makeCompare = ({ departments, interests, locations, users, weights }) => {
     + weights.locations * locations.length
   );
 
-  return (left, right) => {
+  return (left: User, right: User) => {
     const scores = {
       connected: (
         weights.connected
@@ -39,7 +49,11 @@ const makeCompare = ({ departments, interests, locations, users, weights }) => {
       )
     };
 
-    return Object.keys(scores).reduce((accum, key) => accum - scores[key], maximum) / maximum;
+    const score = Object.keys(scores).reduce(
+      (accum, key) => accum - scores[key as keyof typeof scores], maximum
+    );
+
+    return score / maximum;
   };
 };
 

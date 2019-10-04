@@ -6,8 +6,19 @@ import seedLocations from "./seeds/locations.json";
 import seedUsers from "./seeds/users.json";
 
 import makeCompare from "./makeCompare";
+import { Compare, Department, Interests, Location, User, Weights } from "./typings";
 
-const makeConnectionMaker = users => {
+type ReducerState = {
+  compare: Compare;
+  currentUser: null | User;
+  departments: Department[];
+  interests: Interests;
+  locations: Location[];
+  weights: Weights;
+  users: User[];
+};
+
+const makeConnectionMaker = (users: User[]) => {
   const getKey = () => Math.floor(Math.random() * users.length);
 
   return () => {
@@ -28,11 +39,13 @@ const makeInitialState = () => {
   const departments = seedDepartments.map((name, key) => ({ key, name }));
   const departmentKeys = departments.map(({ key }) => key);
 
-  const interests = {};
-  const interestKeys = [];
+  const interests = {} as Interests;
+  const interestKeys: number[] = [];
 
   Object.keys(seedInterests).forEach(key => {
-    interests[key] = seedInterests[key].map(interest => {
+    const interestKey = key as keyof typeof seedInterests;
+
+    interests[interestKey] = seedInterests[interestKey].map(interest => {
       interestKeys.push(interestKeys.length);
 
       return { key: interestKeys.length, name: interest };
@@ -75,15 +88,27 @@ const makeInitialState = () => {
   return { ...state, compare: makeCompare(state) };
 };
 
-export const clearUser = () => ({ type: "CLEAR_USER" });
+type ReducerAction =
+  { type: "CLEAR_USER" }
+  | { type: "SELECT_USER"; user: User }
+  | { type: "UPDATE_USER"; user: User }
+  | { type: "UPDATE_WEIGHT"; key: keyof Weights; value: number };
 
-export const selectUser = user => ({ type: "SELECT_USER", user });
+export const clearUser = () => ({ type: "CLEAR_USER" as const });
 
-export const updateUser = user => ({ type: "UPDATE_USER", user });
+export const selectUser = (user: User) => ({ type: "SELECT_USER" as const, user });
 
-export const updateWeight = ({ key, value }) => ({ type: "UPDATE_WEIGHT", key, value });
+export const updateUser = (user: User) => ({ type: "UPDATE_USER" as const, user });
 
-const reducer = (state, action) => {
+export const updateWeight = ({ key, value }: { key: keyof Weights; value: number }) => ({
+  type: "UPDATE_WEIGHT" as const,
+  key,
+  value
+});
+
+export type Dispatch = (action: ReducerAction) => void;
+
+const reducer = (state: ReducerState, action: ReducerAction) => {
   switch (action.type) {
     case "CLEAR_USER":
       return { ...state, currentUser: null };
@@ -105,10 +130,10 @@ const reducer = (state, action) => {
       return { ...nextState, compare: makeCompare(nextState) };
     }
     default:
-      return state;
+      throw new Error();
   }
 };
 
-const useSimilaritiesReducer = () => useReducer(reducer, null, makeInitialState);
+const useSimilaritiesReducer = () => useReducer(reducer, undefined, makeInitialState);
 
 export default useSimilaritiesReducer;
