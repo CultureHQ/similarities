@@ -1,6 +1,6 @@
 import { Compare, Department, Interests, Location, User, Weights } from "./typings";
 
-type MakeCompareOpts = {
+type Inputs = {
   departments: Department[];
   interests: Interests;
   locations: Location[];
@@ -8,7 +8,7 @@ type MakeCompareOpts = {
   weights: Weights;
 };
 
-const makeCompare = ({ departments, interests, locations, users, weights }: MakeCompareOpts): Compare => {
+const makeCompare = ({ departments, interests, locations, users, weights }: Inputs): Compare => {
   const interestsLength = Object.keys(interests).reduce(
     (accum, key) => accum + interests[key as keyof Interests].length, 0
   );

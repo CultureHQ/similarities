@@ -6,7 +6,7 @@ import seedLocations from "./seeds/locations.json";
 import seedUsers from "./seeds/users.json";
 
 import makeCompare from "./makeCompare";
-import { Compare, Department, Interest, Interests, Location, User, Weights } from "./typings";
+import { Compare, Department, Interests, Location, User, Weights } from "./typings";
 
 type ReducerState = {
   compare: Compare;
@@ -90,9 +90,9 @@ const makeInitialState = () => {
 
 type ReducerAction =
   { type: "CLEAR_USER" }
-  | { type: "SELECT_USER", user: User }
-  | { type: "UPDATE_USER", user: User }
-  | { type: "UPDATE_WEIGHT", key: keyof Weights, value: number };
+  | { type: "SELECT_USER"; user: User }
+  | { type: "UPDATE_USER"; user: User }
+  | { type: "UPDATE_WEIGHT"; key: keyof Weights; value: number };
 
 export const clearUser = () => ({ type: "CLEAR_USER" as const });
 
@@ -100,7 +100,7 @@ export const selectUser = (user: User) => ({ type: "SELECT_USER" as const, user 
 
 export const updateUser = (user: User) => ({ type: "UPDATE_USER" as const, user });
 
-export const updateWeight = ({ key, value }: { key: keyof Weights, value: number }) => ({
+export const updateWeight = ({ key, value }: { key: keyof Weights; value: number }) => ({
   type: "UPDATE_WEIGHT" as const,
   key,
   value
