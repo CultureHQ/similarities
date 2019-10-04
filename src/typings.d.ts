@@ -7,7 +7,7 @@ export type Department = {
   name: string;
 };
 
-type Interest = {
+export type Interest = {
   key: number;
   name: string;
 };
