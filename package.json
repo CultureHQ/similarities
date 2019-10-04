@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/CultureHQ/similarities#readme",
   "dependencies": {
+    "@types/d3-force": "^1.2.1",
     "d3-force": "^2.0.1",
     "react": "^16.10.1",
     "react-dom": "^16.10.1"
