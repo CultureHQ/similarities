@@ -1,6 +1,6 @@
 # similarities
 
-[![Build Status](https://github.com/CultureHQ/similarities/workflows/Push/badge.svg)](https://github.com/CultureHQ/similarities/actions)
+[![Build Status](https://github.com/CultureHQ/similarities/workflows/Main/badge.svg)](https://github.com/CultureHQ/similarities/actions)
 
 Example app for our similarity engine.
 
