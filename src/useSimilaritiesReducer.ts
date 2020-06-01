@@ -94,13 +94,14 @@ type ReducerAction =
   | { type: "UPDATE_USER"; user: User }
   | { type: "UPDATE_WEIGHT"; key: keyof Weights; value: number };
 
-export const clearUser = () => ({ type: "CLEAR_USER" as const });
+export const clearUser = (): ReducerAction => ({ type: "CLEAR_USER" as const });
 
-export const selectUser = (user: User) => ({ type: "SELECT_USER" as const, user });
+export const selectUser = (user: User): ReducerAction => ({ type: "SELECT_USER" as const, user });
 
-export const updateUser = (user: User) => ({ type: "UPDATE_USER" as const, user });
+export const updateUser = (user: User): ReducerAction => ({ type: "UPDATE_USER" as const, user });
 
-export const updateWeight = ({ key, value }: { key: keyof Weights; value: number }) => ({
+type UpdateWeight = { key: keyof Weights; value: number };
+export const updateWeight = ({ key, value }: UpdateWeight): ReducerAction => ({
   type: "UPDATE_WEIGHT" as const,
   key,
   value
@@ -134,6 +135,8 @@ const reducer = (state: ReducerState, action: ReducerAction) => {
   }
 };
 
-const useSimilaritiesReducer = () => useReducer(reducer, undefined, makeInitialState);
+const useSimilaritiesReducer = (): [ReducerState, Dispatch] => (
+  useReducer(reducer, undefined, makeInitialState)
+);
 
 export default useSimilaritiesReducer;

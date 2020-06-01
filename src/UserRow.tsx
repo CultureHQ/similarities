@@ -318,7 +318,7 @@ const SummaryRow: React.FC<SummaryRowProps> = ({ dispatch, locations, user }) =>
 
 type UserRowProps = EditRowProps & SummaryRowProps;
 
-const UserRow = (props: UserRowProps) => {
+const UserRow: React.FC<UserRowProps> = props => {
   const { user } = props;
   const Component = user.checked ? EditRow : SummaryRow;
 

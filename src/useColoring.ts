@@ -53,7 +53,11 @@ type ColoringState = {
   getColor: (user: User) => string;
 };
 
-const useColoring = (users: User[]) => {
+type UseColoring = ColoringState & {
+  onChangeColoring: (coloring: Coloring) => void;
+};
+
+const useColoring = (users: User[]): UseColoring => {
   const [state, setState] = useState<ColoringState>({
     coloring: "location",
     getColor: makeGetColor("location", users)
