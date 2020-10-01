@@ -549,10 +549,10 @@
   resolved "https://registry.yarnpkg.com/@types/color-name/-/color-name-1.1.1.tgz#1c1261bbeaa10a8055bbc5d8ab84b7b2afc846a0"
   integrity sha512-rr+OQyAjxze7GgWrSaJwydHStIhHq2lvY3BOC2Mj7KnzI7XK0Uw1TOOdI9lDoajEbSWLiYgoo4f1R51erQfhPQ==
 
-"@types/d3-force@^1.2.1":
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/@types/d3-force/-/d3-force-1.2.1.tgz#c28803ea36fe29788db69efa0ad6c2dc09544e83"
-  integrity sha512-jqK+I36uz4kTBjyk39meed5y31Ab+tXYN/x1dn3nZEus9yOHCLc+VrcIYLc/aSQ0Y7tMPRlIhLetulME76EiiA==
+"@types/d3-force@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@types/d3-force/-/d3-force-2.0.0.tgz#f1b40d0d6880621a7a9244fbb739de2b4be81a29"
+  integrity sha512-C7JMqldXlR6qlD8yYl8ljWU57McQ4v822Rmf2ETewB0ETDDjcMiHC1b5rOI9kTPDQ9AGTNbmCrAfwZwzCc4vPQ==
 
 "@types/eslint-visitor-keys@^1.0.0":
   version "1.0.0"
