@@ -554,10 +554,10 @@
   resolved "https://registry.yarnpkg.com/@types/color-name/-/color-name-1.1.1.tgz#1c1261bbeaa10a8055bbc5d8ab84b7b2afc846a0"
   integrity sha512-rr+OQyAjxze7GgWrSaJwydHStIhHq2lvY3BOC2Mj7KnzI7XK0Uw1TOOdI9lDoajEbSWLiYgoo4f1R51erQfhPQ==
 
-"@types/d3-force@^3.0.1":
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/@types/d3-force/-/d3-force-3.0.1.tgz#9f8aebb6510e5c3a08bedd398e83b9a68d211199"
-  integrity sha512-fY9fXELktloC4MospE1AMYk67p7zxbW1K79rdzZJ6oB2pddltiTelE9bz6YnZf9GboHhe9k0gwVjP7bOc7wjvg==
+"@types/d3-force@^3.0.2":
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/@types/d3-force/-/d3-force-3.0.2.tgz#b186a008f0b32b88736a82059e8164120cba6f0b"
+  integrity sha512-dZ9w40EA7NhhbuXPkNCLbrq5Vz6aq0k1Y0Z9irGO3JE4pGaJN+m26BX916l4jnOk56elBUlM1usTuIYXDW0rug==
 
 "@types/eslint-scope@^3.7.0":
   version "3.7.0"
